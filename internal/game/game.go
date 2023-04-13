@@ -13,8 +13,25 @@ type Game struct {
 	turn    int       // ID of the player whose turn it is
 }
 
-// NewGame creates a new Game with the given Board and number of players
-func NewGame(board *Board, numPlayers int) (*Game, error) {
+// Creates a new Game with the random Board with given count of rows and cols and number of players
+func NewGame(rows, cols int, numPlayers int) (*Game, error) {
+	board, err := NewRandomBoard(rows, cols)
+	if err != nil {
+		return nil, err
+	}
+
+	game, err := NewGameWithBoard(board, numPlayers)
+	if err != nil {
+		return nil, err
+	}
+
+	game.placePlayers()
+
+	return game, nil
+}
+
+// Creates a new Game with the given Board and number of players
+func NewGameWithBoard(board *Board, numPlayers int) (*Game, error) {
 	if numPlayers < 2 {
 		return nil, errTooSmallPlayers
 	} else if numPlayers > 4 {
@@ -41,20 +58,21 @@ func NewGame(board *Board, numPlayers int) (*Game, error) {
 // A method that automatically places players as far apart as possible depending on the board
 // Necessary and can be called only if there are no players on the field
 func (g *Game) placePlayers() {
-	// TODO: make normal placing, it's just a plug
+	// PLUG
+	// TODO: make normal placing
 
 	for idx, player := range g.players {
 		var cell *Cell
 
 		switch idx {
 		case 0:
-			cell = &g.board.cells[0][0]
+			cell = g.board.Cells[0][0]
 		case 1:
-			cell = &g.board.cells[0][g.board.cols-1]
+			cell = g.board.Cells[0][g.board.cols-1]
 		case 2:
-			cell = &g.board.cells[g.board.rows-1][g.board.cols-1]
+			cell = g.board.Cells[g.board.rows-1][g.board.cols-1]
 		case 3:
-			cell = &g.board.cells[g.board.rows-1][0]
+			cell = g.board.Cells[g.board.rows-1][0]
 		}
 
 		cell.level = 1

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBoard_NewRectangleBoard(t *testing.T) {
+func TestBoardInputData_NewRandomBoard(t *testing.T) {
 	testCases := []struct {
 		name    string
 		rows    int
@@ -28,9 +28,9 @@ func TestBoard_NewRectangleBoard(t *testing.T) {
 			isValid: false,
 		},
 		{
-			name:    "rows < 1",
-			rows:    -5,
-			cols:    5,
+			name:    "cols < 1",
+			rows:    5,
+			cols:    -5,
 			isValid: false,
 		},
 		{
@@ -43,7 +43,7 @@ func TestBoard_NewRectangleBoard(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			board, err := game.NewRectangleBoard(tc.rows, tc.cols)
+			board, err := game.NewRandomBoard(tc.rows, tc.cols)
 
 			if !tc.isValid {
 				assert.Error(t, err)
@@ -51,10 +51,69 @@ func TestBoard_NewRectangleBoard(t *testing.T) {
 				return
 			}
 
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			require.NotNil(t, board)
 			require.Equal(t, board.Rows(), tc.rows)
 			require.Equal(t, board.Cols(), tc.cols)
+		})
+	}
+}
+
+func TestBoardIntegrity_NewRandomBoard(t *testing.T) {
+	repeats := 10 // How many times will each test case be checked
+
+	testCases := []struct {
+		name string
+		rows int
+		cols int
+	}{
+		{
+			name: "small",
+			rows: 8,
+			cols: 8,
+		},
+		{
+			name: "medium",
+			rows: 28,
+			cols: 28,
+		},
+		{
+			name: "big",
+			rows: 64,
+			cols: 64,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			for attempt := 0; attempt < repeats; attempt++ {
+				board, err := game.NewRandomBoard(tc.rows, tc.cols)
+
+				require.NoError(t, err)
+				require.NotNil(t, board)
+				require.Equal(t, board.Rows(), tc.rows)
+				require.Equal(t, board.Cols(), tc.cols)
+				require.Len(t, board.Cells, tc.rows)
+
+				for i, row := range board.Cells {
+					require.NotNil(t, row)
+					require.NotEmpty(t, row)
+					require.Len(t, row, tc.cols)
+
+					for j, cell := range row {
+						if cell != nil {
+							require.Equal(t, cell.Row, i)
+							require.Equal(t, cell.Col, j)
+
+							neighbors := cell.GetNeighbors(board)
+
+							require.NotEmpty(t, neighbors)
+						}
+					}
+				}
+
+			}
+
 		})
 	}
 }

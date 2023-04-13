@@ -7,9 +7,7 @@ import (
 )
 
 func main() {
-	board, _ := game.NewRectangleBoard(5, 3)
-
-	game, _ := game.NewGame(board, 2)
+	game, _ := game.NewGame(3, 5, 2)
 
 	fmt.Println(&game)
 }

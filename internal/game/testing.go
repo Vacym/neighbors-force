@@ -1,6 +1,6 @@
 package game
 
 func TestBoard() *Board {
-	board, _ := NewRectangleBoard(5, 5)
+	board, _ := NewBoard(5, 5)
 	return board
 }

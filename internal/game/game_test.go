@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestGame_NewGame(t *testing.T) {
+func TestGame_NewGameWithBoard(t *testing.T) {
 	board := game.TestBoard()
 
 	testCases := []struct {
@@ -40,7 +40,7 @@ func TestGame_NewGame(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			game, err := game.NewGame(board, tc.players)
+			game, err := game.NewGameWithBoard(board, tc.players)
 
 			if !tc.isValid {
 				assert.Error(t, err)
