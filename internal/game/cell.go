@@ -1,5 +1,12 @@
 package game
 
+import "errors"
+
+var (
+	errSamePlayerCell = errors.New("target cell already belongs to the same player")
+	errNotEnoughPower = errors.New("power of cell must be more then 1 for attack")
+)
+
 type coords struct {
 	Row int // Row of the cell
 	Col int // Column of the cell
@@ -10,6 +17,10 @@ type Cell struct {
 	level int     // Level of cell
 	power int     // Power of cell
 	owner *Player // Pointer of the player who owns the cell, nil if the cell is unoccupied
+}
+
+func (c Cell) Owner() *Player {
+	return c.owner
 }
 
 func newCell(row, col int) *Cell {
@@ -33,18 +44,42 @@ func (c Cell) GetNeighbors(board *Board) []*Cell {
 	return neighbors
 }
 
+// Attacks target cell and defines new owner of target
+func (c *Cell) Attack(target *Cell) error {
+	if c.owner == target.owner {
+		return errSamePlayerCell
+	}
+	if c.power <= 1 {
+		return errNotEnoughPower
+	}
+
+	attackPower := c.power - 1
+	c.power = 1
+	target.power -= attackPower
+
+	if target.power < 0 {
+		target.owner.DeleteCell()
+		c.owner.AddCell()
+
+		target.power = -target.power
+		target.owner = c.owner
+	}
+
+	return nil
+}
+
 func getNeighborCoords(row, col, boardRow, boardCol int) []coords {
 	// Offset is necessary because the hexagonal cells
 	// are not placed under each other.
 	// The offset depends on the row number.
 	offset := row % 2
 	neighborsRelative := [6]coords{
-		{-1, offset - 1},
-		{-1, offset - 0},
-		{+1, offset - 1},
-		{+1, offset - 0},
-		{0, -1},
-		{0, +1},
+		{-1, offset - 1}, // up-left
+		{-1, offset - 0}, // up-right
+		{+1, offset - 1}, // down-left
+		{+1, offset - 0}, // down-right
+		{0, -1},          // left
+		{0, +1},          // right
 	}
 
 	neighborCoords := make([]coords, 0, 6)

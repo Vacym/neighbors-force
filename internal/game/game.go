@@ -3,8 +3,13 @@ package game
 import "errors"
 
 var (
-	errTooSmallPlayers = errors.New("game cannot be played with less than 2 players")
-	errTooManyPlayers  = errors.New("game cannot be played with more than 4 players")
+	errTooSmallPlayers       = errors.New("game cannot be played with less than 2 players")
+	errTooManyPlayers        = errors.New("game cannot be played with more than 4 players")
+	errNotPlayerTurn         = errors.New("not player's turn to move")
+	errNilPointer            = errors.New("nil pointer error")
+	errInvalidAttackingCell  = errors.New("attacking cell is not owned by attacking player")
+	errAttackTurnExpired     = errors.New("Attack turn has expired")
+	errUpgradeTurnNotReached = errors.New("Upgrade time has not been reached")
 )
 
 type Game struct {
@@ -26,6 +31,7 @@ func NewGame(rows, cols int, numPlayers int) (*Game, error) {
 	}
 
 	game.placePlayers()
+	game.countPlayersCell()
 
 	return game, nil
 }
@@ -50,7 +56,8 @@ func NewGameWithBoard(board *Board, numPlayers int) (*Game, error) {
 		turn:    0,
 	}
 
-	game.placePlayers()
+	game.placePlayers() // will delete
+	game.countPlayersCell()
 
 	return game, nil
 }
@@ -81,16 +88,63 @@ func (g *Game) placePlayers() {
 	}
 }
 
-// Method for executing a move in the game
-func (g *Game) Move(from, to int, numUnits int) bool {
-	// Implementation
-	return false
+func (g *Game) countPlayersCell() {
+	for _, row := range g.board.Cells {
+		for _, cell := range row {
+			if cell != nil && cell.owner != nil {
+				cell.owner.cellsCounter++
+			}
+		}
+	}
+}
+
+// Method for executing a attack in the game
+func (g *Game) Attack(player *Player, from, to *Cell) error {
+	if player.id != g.turn {
+		return errNotPlayerTurn
+	}
+	if !player.attacking {
+		return errAttackTurnExpired
+	}
+	if from == nil || to == nil {
+		return errNilPointer
+	}
+	if from.owner != player {
+		return errInvalidAttackingCell
+	}
+
+	err := from.Attack(to)
+
+	return err
+}
+
+func (g *Game) EndAttack(player *Player) error {
+	if player.id != g.turn {
+		return errNotPlayerTurn
+	}
+	player.attacking = false
+
+	return nil
+}
+
+func (g *Game) Upgrade(player *Player) error {
+	// PLUG
+	return nil
+}
+
+func (g *Game) EndUpgrade(player *Player) error {
+	// PLUG
+	return nil
 }
 
 // Method for ending a player's turn
-func (g *Game) EndTurn() bool {
+func (g *Game) EndTurn(player *Player) error {
+	player.attacking = true
+	g.NextTurn()
+
 	// Implementation
-	return false
+
+	return nil
 }
 
 func (g *Game) NextTurn() {
