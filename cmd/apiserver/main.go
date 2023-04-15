@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/Vacym/neighbor-force/internal/game"
+	"github.com/Vacym/neighbors-force/internal/game"
 )
 
 func main() {

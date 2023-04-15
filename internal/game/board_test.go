@@ -3,7 +3,7 @@ package game_test
 import (
 	"testing"
 
-	"github.com/Vacym/neighbor-force/internal/game"
+	"github.com/Vacym/neighbors-force/internal/game"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
