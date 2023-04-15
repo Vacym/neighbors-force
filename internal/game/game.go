@@ -66,31 +66,26 @@ func (g *Game) placePlayers() {
 	// PLUG
 	// TODO: make normal placing
 
+	// It's temporary!!!
 	for idx, player := range g.Players {
-		var cell *Cell
-
 		switch idx {
 		case 0:
-			cell = g.Board.Cells[0][0]
+			g.Board.Cells[0][0] = newCellWithParameters(0, 0, 1, 2, player)
 		case 1:
-			cell = g.Board.Cells[0][g.Board.cols-1]
+			g.Board.Cells[0][g.Board.cols-1] = newCellWithParameters(0, g.Board.cols-1, 1, 2, player)
 		case 2:
-			cell = g.Board.Cells[g.Board.rows-1][g.Board.cols-1]
+			g.Board.Cells[g.Board.rows-1][g.Board.cols-1] = newCellWithParameters(g.Board.rows-1, g.Board.cols-1, 1, 2, player)
 		case 3:
-			cell = g.Board.Cells[g.Board.rows-1][0]
+			g.Board.Cells[g.Board.rows-1][0] = newCellWithParameters(g.Board.rows-1, 0, 1, 2, player)
 		}
-
-		cell.level = 1
-		cell.power = 2
-		cell.owner = player
 	}
 }
 
 func (g *Game) countPlayersCell() {
 	for _, row := range g.Board.Cells {
 		for _, cell := range row {
-			if cell != nil && cell.owner != nil {
-				cell.owner.addCell()
+			if cell != nil && cell.Owner() != nil {
+				cell.Owner().addCell()
 			}
 		}
 	}

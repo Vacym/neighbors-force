@@ -95,15 +95,16 @@ func TestBoardIntegrity_NewRandomBoard(t *testing.T) {
 				require.Equal(t, board.Cols(), tc.cols)
 				require.Len(t, board.Cells, tc.rows)
 
-				for i, row := range board.Cells {
-					require.NotNil(t, row)
-					require.NotEmpty(t, row)
-					require.Len(t, row, tc.cols)
+				for i, rowOfCells := range board.Cells {
+					require.NotNil(t, rowOfCells)
+					require.NotEmpty(t, rowOfCells)
+					require.Len(t, rowOfCells, tc.cols)
 
-					for j, cell := range row {
+					for j, cell := range rowOfCells {
 						if cell != nil {
-							require.Equal(t, cell.Row, i)
-							require.Equal(t, cell.Col, j)
+							row, col := cell.Coords()
+							require.Equal(t, row, i)
+							require.Equal(t, col, j)
 
 							neighbors := cell.GetNeighbors(board)
 

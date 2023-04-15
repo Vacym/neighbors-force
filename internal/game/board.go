@@ -19,9 +19,9 @@ for example NewBoard(5, 6)
 */
 
 type Board struct {
-	rows  int       // Rows of the hexagonal board
-	cols  int       // Columns of the hexagonal board
-	Cells [][]*Cell // 2D array of cells representing the board
+	rows  int      // Rows of the hexagonal board
+	cols  int      // Columns of the hexagonal board
+	Cells [][]cell // 2D array of cells representing the board
 }
 
 // NewBoard creates a new Board with the given number of rows and columns
@@ -30,10 +30,10 @@ func NewBoard(rows, cols int) (*Board, error) {
 		return nil, errIncorrectBoardSize
 	}
 
-	cells := make([][]*Cell, rows)
+	cells := make([][]cell, rows)
 
 	for i := range cells {
-		cells[i] = make([]*Cell, cols)
+		cells[i] = make([]cell, cols)
 
 		for j := range cells[i] {
 			cells[i][j] = newCell(i, j)
