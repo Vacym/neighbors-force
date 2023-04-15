@@ -14,12 +14,12 @@ type coords struct {
 
 type Cell struct {
 	coords
-	level int     // Level of cell
-	power int     // Power of cell
-	owner *Player // Pointer of the player who owns the cell, nil if the cell is unoccupied
+	level int    // Level of cell
+	power int    // Power of cell
+	owner player // Pointer of the player who owns the cell, nil if the cell is unoccupied
 }
 
-func (c Cell) Owner() *Player {
+func (c Cell) Owner() player {
 	return c.owner
 }
 
@@ -58,8 +58,8 @@ func (c *Cell) Attack(target *Cell) error {
 	target.power -= attackPower
 
 	if target.power < 0 {
-		target.owner.DeleteCell()
-		c.owner.AddCell()
+		target.owner.deleteCell()
+		c.owner.addCell()
 
 		target.power = -target.power
 		target.owner = c.owner

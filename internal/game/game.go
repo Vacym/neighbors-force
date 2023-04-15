@@ -3,19 +3,17 @@ package game
 import "errors"
 
 var (
-	errTooSmallPlayers       = errors.New("game cannot be played with less than 2 players")
-	errTooManyPlayers        = errors.New("game cannot be played with more than 4 players")
-	errNotPlayerTurn         = errors.New("not player's turn to move")
-	errNilPointer            = errors.New("nil pointer error")
-	errInvalidAttackingCell  = errors.New("attacking cell is not owned by attacking player")
-	errAttackTurnExpired     = errors.New("Attack turn has expired")
-	errUpgradeTurnNotReached = errors.New("Upgrade time has not been reached")
+	errTooSmallPlayers      = errors.New("game cannot be played with less than 2 players")
+	errTooManyPlayers       = errors.New("game cannot be played with more than 4 players")
+	errNotPlayerTurn        = errors.New("not player's turn to move")
+	errNilPointer           = errors.New("nil pointer error")
+	errInvalidAttackingCell = errors.New("attacking cell is not owned by attacking player")
 )
 
 type Game struct {
-	board   *Board    // Instance of the board
-	players []*Player // List of players
-	turn    int       // ID of the player whose turn it is
+	Board   *Board   // Instance of the board
+	Players []player // List of players
+	turn    int      // ID of the player whose turn it is
 }
 
 // Creates a new Game with the random Board with given count of rows and cols and number of players
@@ -44,15 +42,15 @@ func NewGameWithBoard(board *Board, numPlayers int) (*Game, error) {
 		return nil, errTooManyPlayers
 	}
 
-	players := make([]*Player, numPlayers)
+	players := make([]player, numPlayers)
 
 	for i := range players {
 		players[i] = NewPlayer(i)
 	}
 
 	game := &Game{
-		board:   board,
-		players: players,
+		Board:   board,
+		Players: players,
 		turn:    0,
 	}
 
@@ -68,18 +66,18 @@ func (g *Game) placePlayers() {
 	// PLUG
 	// TODO: make normal placing
 
-	for idx, player := range g.players {
+	for idx, player := range g.Players {
 		var cell *Cell
 
 		switch idx {
 		case 0:
-			cell = g.board.Cells[0][0]
+			cell = g.Board.Cells[0][0]
 		case 1:
-			cell = g.board.Cells[0][g.board.cols-1]
+			cell = g.Board.Cells[0][g.Board.cols-1]
 		case 2:
-			cell = g.board.Cells[g.board.rows-1][g.board.cols-1]
+			cell = g.Board.Cells[g.Board.rows-1][g.Board.cols-1]
 		case 3:
-			cell = g.board.Cells[g.board.rows-1][0]
+			cell = g.Board.Cells[g.Board.rows-1][0]
 		}
 
 		cell.level = 1
@@ -89,22 +87,19 @@ func (g *Game) placePlayers() {
 }
 
 func (g *Game) countPlayersCell() {
-	for _, row := range g.board.Cells {
+	for _, row := range g.Board.Cells {
 		for _, cell := range row {
 			if cell != nil && cell.owner != nil {
-				cell.owner.cellsCounter++
+				cell.owner.addCell()
 			}
 		}
 	}
 }
 
 // Method for executing a attack in the game
-func (g *Game) Attack(player *Player, from, to *Cell) error {
-	if player.id != g.turn {
+func (g *Game) Attack(player player, from, to *Cell) error {
+	if player.Id() != g.turn {
 		return errNotPlayerTurn
-	}
-	if !player.attacking {
-		return errAttackTurnExpired
 	}
 	if from == nil || to == nil {
 		return errNilPointer
@@ -112,41 +107,40 @@ func (g *Game) Attack(player *Player, from, to *Cell) error {
 	if from.owner != player {
 		return errInvalidAttackingCell
 	}
+	if err := player.attack(); err != nil {
+		return err
+	}
 
 	err := from.Attack(to)
 
 	return err
 }
 
-func (g *Game) EndAttack(player *Player) error {
-	if player.id != g.turn {
+func (g *Game) EndAttack(player player) error {
+	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
-	player.attacking = false
+	player.endAttack()
 
 	return nil
 }
 
-func (g *Game) Upgrade(player *Player) error {
-	// PLUG
-	return nil
-}
-
-func (g *Game) EndUpgrade(player *Player) error {
+func (g *Game) Upgrade(player player) error {
 	// PLUG
 	return nil
 }
 
 // Method for ending a player's turn
-func (g *Game) EndTurn(player *Player) error {
-	player.attacking = true
-	g.NextTurn()
+func (g *Game) EndTurn(player player) error {
+	player.endUpgrade()
 
 	// Implementation
+
+	g.NextTurn()
 
 	return nil
 }
 
 func (g *Game) NextTurn() {
-	g.turn = (g.turn + 1) % len(g.players)
+	g.turn = (g.turn + 1) % len(g.Players)
 }

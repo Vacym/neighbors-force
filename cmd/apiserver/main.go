@@ -7,7 +7,8 @@ import (
 )
 
 func main() {
-	game, _ := game.NewGame(3, 5, 2)
+	g, _ := game.NewGame(3, 5, 2)
 
-	fmt.Println(&game)
+	fmt.Println(&g)
+
 }
