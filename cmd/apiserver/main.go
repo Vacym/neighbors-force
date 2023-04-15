@@ -3,11 +3,12 @@ package main
 import (
 	"fmt"
 
-	"github.com/Vacym/neighbor-force/internal/game"
+	"github.com/Vacym/neighbors-force/internal/game"
 )
 
 func main() {
-	game, _ := game.NewGame(3, 5, 2)
+	g, _ := game.NewGame(3, 5, 2)
 
-	fmt.Println(&game)
+	fmt.Println(&g)
+
 }

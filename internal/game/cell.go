@@ -12,15 +12,36 @@ type coords struct {
 	Col int // Column of the cell
 }
 
-type Cell struct {
-	coords
-	level int     // Level of cell
-	power int     // Power of cell
-	owner *Player // Pointer of the player who owns the cell, nil if the cell is unoccupied
+type cell interface {
+	Level() int
+	Power() int
+	Owner() player
+	Coords() (row int, col int)
+
+	GetNeighbors(*Board) []cell
 }
 
-func (c Cell) Owner() *Player {
+type Cell struct {
+	coords
+	level int    // Level of cell
+	power int    // Power of cell
+	owner player // Pointer of the player who owns the cell, nil if the cell is unoccupied
+}
+
+func (c Cell) Level() int {
+	return c.level
+}
+
+func (c Cell) Power() int {
+	return c.power
+}
+
+func (c Cell) Owner() player {
 	return c.owner
+}
+
+func (c Cell) Coords() (int, int) {
+	return c.Row, c.Col
 }
 
 func newCell(row, col int) *Cell {
@@ -29,9 +50,18 @@ func newCell(row, col int) *Cell {
 	}
 }
 
+func newCellWithParameters(row, col int, level, power int, owner player) *Cell {
+	return &Cell{
+		coords: coords{row, col},
+		level:  level,
+		power:  power,
+		owner:  owner,
+	}
+}
+
 // Returns neighbors of the cell
-func (c Cell) GetNeighbors(board *Board) []*Cell {
-	var neighbors []*Cell
+func (c Cell) GetNeighbors(board *Board) []cell {
+	neighbors := make([]cell, 0, 6)
 
 	neighborCoords := getNeighborCoords(c.Row, c.Col, board.Rows(), board.Cols())
 
@@ -58,8 +88,8 @@ func (c *Cell) Attack(target *Cell) error {
 	target.power -= attackPower
 
 	if target.power < 0 {
-		target.owner.DeleteCell()
-		c.owner.AddCell()
+		target.owner.deleteCell()
+		c.owner.addCell()
 
 		target.power = -target.power
 		target.owner = c.owner
