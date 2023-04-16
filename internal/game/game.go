@@ -5,6 +5,7 @@ import "errors"
 var (
 	errTooSmallPlayers      = errors.New("game cannot be played with less than 2 players")
 	errTooManyPlayers       = errors.New("game cannot be played with more than 4 players")
+	errNegativePlayers      = errors.New("players cannot be less than 0")
 	errNotPlayerTurn        = errors.New("not player's turn to move")
 	errNilPointer           = errors.New("nil pointer error")
 	errInvalidAttackingCell = errors.New("attacking cell is not owned by attacking player")
@@ -23,7 +24,12 @@ func NewGame(rows, cols int, numPlayers int) (*Game, error) {
 		return nil, err
 	}
 
-	game, err := NewGameWithBoard(board, numPlayers)
+	players, err := NewPlayersSlice(numPlayers)
+	if err != nil {
+		return nil, err
+	}
+
+	game, err := NewGameWithBoard(board, players)
 	if err != nil {
 		return nil, err
 	}
@@ -35,17 +41,11 @@ func NewGame(rows, cols int, numPlayers int) (*Game, error) {
 }
 
 // Creates a new Game with the given Board and number of players
-func NewGameWithBoard(board *Board, numPlayers int) (*Game, error) {
-	if numPlayers < 2 {
+func NewGameWithBoard(board *Board, players []player) (*Game, error) {
+	if len(players) < 2 {
 		return nil, errTooSmallPlayers
-	} else if numPlayers > 4 {
+	} else if len(players) > 4 {
 		return nil, errTooManyPlayers
-	}
-
-	players := make([]player, numPlayers)
-
-	for i := range players {
-		players[i] = NewPlayer(i)
 	}
 
 	game := &Game{
@@ -54,10 +54,23 @@ func NewGameWithBoard(board *Board, numPlayers int) (*Game, error) {
 		turn:    0,
 	}
 
-	game.placePlayers() // will delete
 	game.countPlayersCell()
 
 	return game, nil
+}
+
+func NewPlayersSlice(numPlayers int) ([]player, error) {
+	if numPlayers < 0 {
+		return nil, errNegativePlayers
+	}
+
+	players := make([]player, numPlayers)
+
+	for i := range players {
+		players[i] = NewPlayer(i)
+	}
+
+	return players, nil
 }
 
 // A method that automatically places players as far apart as possible depending on the board
@@ -92,21 +105,21 @@ func (g *Game) countPlayersCell() {
 }
 
 // Method for executing a attack in the game
-func (g *Game) Attack(player player, from, to *Cell) error {
+func (g *Game) Attack(player player, from, to cell) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
 	if from == nil || to == nil {
 		return errNilPointer
 	}
-	if from.owner != player {
+	if from.Owner() != player {
 		return errInvalidAttackingCell
 	}
 	if err := player.attack(); err != nil {
 		return err
 	}
 
-	err := from.Attack(to)
+	err := from.attack(to)
 
 	return err
 }

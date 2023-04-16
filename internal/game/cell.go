@@ -18,6 +18,8 @@ type cell interface {
 	Owner() player
 	Coords() (row int, col int)
 
+	attack(target cell) error
+
 	GetNeighbors(*Board) []cell
 }
 
@@ -75,7 +77,8 @@ func (c Cell) GetNeighbors(board *Board) []cell {
 }
 
 // Attacks target cell and defines new owner of target
-func (c *Cell) Attack(target *Cell) error {
+func (c *Cell) attack(targetInterface cell) error {
+	target := targetInterface.(*Cell)
 	if c.owner == target.owner {
 		return errSamePlayerCell
 	}
@@ -88,7 +91,9 @@ func (c *Cell) Attack(target *Cell) error {
 	target.power -= attackPower
 
 	if target.power < 0 {
-		target.owner.deleteCell()
+		if target.owner != nil {
+			target.owner.deleteCell()
+		}
 		c.owner.addCell()
 
 		target.power = -target.power

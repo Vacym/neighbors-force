@@ -8,39 +8,40 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var testCasesNewGame = []struct {
+	name    string
+	players int
+	isValid bool
+}{
+	{
+		name:    "valid game",
+		players: 4,
+		isValid: true,
+	},
+	{
+		name:    "many players",
+		players: 5,
+		isValid: false,
+	},
+	{
+		name:    "small players",
+		players: 1,
+		isValid: false,
+	},
+	{
+		name:    "negative count of players",
+		players: -5,
+		isValid: false,
+	},
+}
+
 func TestGame_NewGameWithBoard(t *testing.T) {
 	board := game.TestBoard()
 
-	testCases := []struct {
-		name    string
-		players int
-		isValid bool
-	}{
-		{
-			name:    "valid game",
-			players: 4,
-			isValid: true,
-		},
-		{
-			name:    "many players",
-			players: 5,
-			isValid: false,
-		},
-		{
-			name:    "small players",
-			players: 1,
-			isValid: false,
-		},
-		{
-			name:    "negative count of players",
-			players: -5,
-			isValid: false,
-		},
-	}
-
-	for _, tc := range testCases {
+	for _, tc := range testCasesNewGame {
 		t.Run(tc.name, func(t *testing.T) {
-			game, err := game.NewGameWithBoard(board, tc.players)
+			players, _ := game.NewPlayersSlice(tc.players)
+			game, err := game.NewGameWithBoard(board, players)
 
 			if !tc.isValid {
 				assert.Error(t, err)

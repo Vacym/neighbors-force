@@ -1,7 +1,7 @@
 package game
 
 func TestGame() *Game {
-	game, _ := NewGameWithBoard(TestBoard(), 2)
+	game, _ := NewGame(5, 5, 2)
 	return game
 }
 
@@ -15,4 +15,32 @@ func TestPlayer(id int) *Player {
 	player.points = 10
 	player.cellsCounter = 10
 	return player
+}
+
+func TestBoardAttack() (*Board, []player) {
+	// This method of map creation will only be used until
+	// the implementation of saving custom boards
+	/*
+		(1) {6} (5) ( ) ( )
+		  (6) {1} ( ) ( ) ( )
+		( ) {3} ( ) ( ) ( )
+		  ( ) ( ) ( ) ( ) ( )
+		( ) ( ) ( ) ( ) ( )
+
+		(power) - p1
+		{power} - p2
+	*/
+
+	p1 := NewPlayer(0)
+	p2 := NewPlayer(1)
+
+	board, _ := NewBoard(5, 5)
+	board.Cells[0][0] = newCellWithParameters(0, 0, 1, 1, p1)
+	board.Cells[1][0] = newCellWithParameters(1, 0, 1, 6, p1)
+	board.Cells[0][1] = newCellWithParameters(0, 1, 1, 6, p2)
+	board.Cells[1][1] = newCellWithParameters(1, 1, 1, 1, p2)
+	board.Cells[0][2] = newCellWithParameters(0, 2, 1, 5, p1)
+	board.Cells[2][1] = newCellWithParameters(2, 1, 1, 3, p2)
+
+	return board, []player{p1, p2}
 }
