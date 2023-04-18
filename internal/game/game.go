@@ -55,8 +55,6 @@ func NewGameWithBoard(board *Board, players []player) (*Game, error) {
 		turn:    0,
 	}
 
-	game.countPlayersCell()
-
 	return game, nil
 }
 

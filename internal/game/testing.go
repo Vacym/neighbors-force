@@ -44,3 +44,7 @@ func TestBoardAttack() (*Board, []player) {
 
 	return board, []player{p1, p2}
 }
+
+func TestGameAttack() (*Game, error) {
+	return NewGameWithBoard(TestBoardAttack())
+}
