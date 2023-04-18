@@ -9,6 +9,7 @@ var (
 	errNotPlayerTurn        = errors.New("not player's turn to move")
 	errNilPointer           = errors.New("nil pointer error")
 	errInvalidAttackingCell = errors.New("attacking cell is not owned by attacking player")
+	errInvalidUpgradingCell = errors.New("upgrading cell is not owned by player")
 )
 
 type Game struct {
@@ -133,9 +134,23 @@ func (g *Game) EndAttack(player player) error {
 	return nil
 }
 
-func (g *Game) Upgrade(player player) error {
-	// PLUG
-	return nil
+func (g *Game) Upgrade(player player, target cell, points int) error {
+	if player.Id() != g.turn {
+		return errNotPlayerTurn
+	}
+	if target == nil {
+		return errNilPointer
+	}
+	if target.Owner() != player {
+		return errInvalidUpgradingCell
+	}
+	if err := player.upgrade(points); err != nil {
+		return err
+	}
+
+	err := target.upgrade(points)
+
+	return err
 }
 
 // Method for ending a player's turn

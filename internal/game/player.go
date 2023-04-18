@@ -5,6 +5,7 @@ import "errors"
 var (
 	errAttackTurnExpired     = errors.New("Attack turn has expired")
 	errUpgradeTurnNotReached = errors.New("Upgrade time has not been reached")
+	errNotEnoughPoints       = errors.New("not enough points to upgrade")
 )
 
 type player interface {
@@ -12,7 +13,7 @@ type player interface {
 
 	attack() error
 	endAttack()
-	upgrade(cell *Cell) bool
+	upgrade(points int) error
 	endUpgrade()
 
 	addCell()
@@ -47,18 +48,24 @@ func (p *Player) attack() error {
 }
 
 func (p *Player) endAttack() {
-	p.attacking = true
+	p.attacking = false
 }
 
 // Method for upgrading a cell owned by a player
-func (player *Player) upgrade(cell *Cell) bool {
-	// Implementation
+func (p *Player) upgrade(points int) error {
+	if p.attacking {
+		return errUpgradeTurnNotReached
+	}
+	if p.points < points {
+		return errNotEnoughPoints
+	}
+	p.points -= points
 
-	return true
+	return nil
 }
 
 func (p *Player) endUpgrade() {
-	p.attacking = false
+	p.attacking = true
 }
 
 func (p *Player) addCell() {

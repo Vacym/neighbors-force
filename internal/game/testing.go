@@ -31,8 +31,8 @@ func TestBoardAttack() (*Board, []player) {
 		{power} - p2
 	*/
 
-	p1 := NewPlayer(0)
-	p2 := NewPlayer(1)
+	p1 := TestPlayer(0)
+	p2 := TestPlayer(1)
 
 	board, _ := NewBoard(5, 5)
 	board.Cells[0][0] = newCellWithParameters(0, 0, 1, 1, p1)

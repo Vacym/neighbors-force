@@ -138,3 +138,53 @@ func TestCell_attack(t *testing.T) {
 		})
 	}
 }
+
+func TestCell_upgrade(t *testing.T) {
+	// TODO: add tests after releases upgrades
+
+	testCases := []struct {
+		name     string
+		row, col int
+		addLevel int
+		isValid  bool
+	}{
+		{
+			"valid upgrade 1",
+			0, 0,
+			8,
+			true,
+		},
+		{
+			"valid upgrade 2",
+			0, 1,
+			6,
+			true,
+		},
+	}
+
+	// Run test cases
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			board, players := game.TestBoardAttack()
+			thisGame, err := game.NewGameWithBoard(board, players)
+			require.NoError(t, err)
+
+			cell := board.Cells[tc.row][tc.col]
+
+			if cell.Owner().Id() != 0 {
+				thisGame.EndTurn(players[0])
+			}
+			thisGame.EndAttack(cell.Owner())
+
+			err = thisGame.Upgrade(cell.Owner(), cell, tc.addLevel)
+
+			if tc.isValid {
+				require.NoError(t, err)
+				// Check the result of cell1.Power() after the attack
+				assert.Equal(t, 1+tc.addLevel, cell.Level(), "Expected cell level to be %d, but got %d", 1+tc.addLevel, cell.Level())
+			} else {
+				require.Error(t, err)
+			}
+		})
+	}
+}

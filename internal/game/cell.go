@@ -19,6 +19,7 @@ type cell interface {
 	Coords() (row int, col int)
 
 	attack(target cell) error
+	upgrade(points int) error
 
 	GetNeighbors(*Board) []cell
 }
@@ -99,6 +100,12 @@ func (c *Cell) attack(targetInterface cell) error {
 		target.power = -target.power
 		target.owner = c.owner
 	}
+
+	return nil
+}
+
+func (c *Cell) upgrade(points int) error {
+	c.level += points
 
 	return nil
 }
