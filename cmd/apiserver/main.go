@@ -1,14 +1,34 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 
-	"github.com/Vacym/neighbors-force/internal/game"
+	"github.com/BurntSushi/toml"
+	"github.com/Vacym/neighbors-force/internal/apiserver"
 )
 
+var (
+	configPath string
+)
+
+func init() {
+	flag.StringVar(&configPath, "config-path", "configs/server.toml", "path to config file")
+}
+
 func main() {
-	g, _ := game.NewGame(3, 5, 2)
 
-	fmt.Println(&g)
+	flag.Parse()
 
+	config := apiserver.NewConfig()
+	_, err := toml.DecodeFile(configPath, config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := apiserver.Start(config); err != nil {
+		log.Fatal(err)
+		fmt.Println(err)
+	}
 }

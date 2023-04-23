@@ -38,6 +38,7 @@
 # Ignore configuration files
 *.conf
 *.cfg
+*.toml
 
 # Ignore settings files
 *.settings
