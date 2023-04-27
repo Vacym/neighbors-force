@@ -44,7 +44,7 @@ func (s *apiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (s *apiServer) configureRouter() {
 	apiRouter := s.router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(s.UserMiddleware)
-	apiRouter.HandleFunc("/game/create", s.createGame()).Methods("POST")
+	apiRouter.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
 
 }
 
@@ -76,7 +76,7 @@ func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *apiServer) createGame() http.HandlerFunc {
+func (s *apiServer) handleCreateGame() http.HandlerFunc {
 	type request struct {
 		Rows       int `json:"rows"`
 		Cols       int `json:"cols"`

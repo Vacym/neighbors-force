@@ -169,12 +169,12 @@ func (g *Game) NextTurn() {
 func (g *Game) ToMap() map[string]interface{} {
 	return map[string]interface{}{
 		"board":   g.Board.toMap(),
-		"players": ToPlayerInterfaceSlice(g.Players),
+		"players": toPlayerInterfaceSlice(g.Players),
 		"turn":    g.turn,
 	}
 }
 
-func ToPlayerInterfaceSlice(players []player) []interface{} {
+func toPlayerInterfaceSlice(players []player) []interface{} {
 	result := make([]interface{}, len(players))
 	for i, p := range players {
 		result[i] = p.toMap()

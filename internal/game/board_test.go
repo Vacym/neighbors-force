@@ -22,21 +22,21 @@ func TestBoardInputData_NewRandomBoard(t *testing.T) {
 			isValid: true,
 		},
 		{
-			name:    "rows < 1",
-			rows:    -5,
+			name:    "rows < 2",
+			rows:    1,
 			cols:    5,
 			isValid: false,
 		},
 		{
-			name:    "cols < 1",
+			name:    "cols < 2",
 			rows:    5,
-			cols:    -5,
+			cols:    1,
 			isValid: false,
 		},
 		{
-			name:    "rows and cols < 1",
-			rows:    -5,
-			cols:    -5,
+			name:    "rows and cols < 2",
+			rows:    1,
+			cols:    1,
 			isValid: false,
 		},
 	}

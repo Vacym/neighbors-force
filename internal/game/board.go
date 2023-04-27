@@ -3,7 +3,7 @@ package game
 import "errors"
 
 var (
-	errIncorrectBoardSize = errors.New("board size cannot be less then 1")
+	errIncorrectBoardSize = errors.New("board size cannot be less then 2")
 )
 
 /*
@@ -26,7 +26,7 @@ type Board struct {
 
 // NewBoard creates a new Board with the given number of rows and columns
 func NewBoard(rows, cols int) (*Board, error) {
-	if rows < 1 || cols < 1 {
+	if rows < 2 || cols < 2 {
 		return nil, errIncorrectBoardSize
 	}
 

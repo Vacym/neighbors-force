@@ -195,3 +195,11 @@ func TestGame_EndAttack(t *testing.T) {
 	err = g.EndAttack(g.Players[1])
 	assert.NoError(t, err)
 }
+func TestGame_ToMap(t *testing.T) {
+	g, err := game.TestGameAttack()
+	require.NoError(t, err)
+
+	// Invalid end attack
+	gameMap := g.ToMap()
+	assert.NotEmpty(t, gameMap)
+}
