@@ -165,3 +165,19 @@ func (g *Game) EndTurn(player player) error {
 func (g *Game) NextTurn() {
 	g.turn = (g.turn + 1) % len(g.Players)
 }
+
+func (g *Game) ToMap() map[string]interface{} {
+	return map[string]interface{}{
+		"board":   g.Board.toMap(),
+		"players": ToPlayerInterfaceSlice(g.Players),
+		"turn":    g.turn,
+	}
+}
+
+func ToPlayerInterfaceSlice(players []player) []interface{} {
+	result := make([]interface{}, len(players))
+	for i, p := range players {
+		result[i] = p.toMap()
+	}
+	return result
+}

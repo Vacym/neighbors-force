@@ -9,7 +9,8 @@ var (
 )
 
 type player interface {
-	Id() int // ID of player
+	Id() int     // ID of player
+	Points() int // points of player
 
 	attack() error
 	endAttack()
@@ -18,13 +19,15 @@ type player interface {
 
 	addCell()
 	deleteCell()
+
+	toMap() map[string]interface{}
 }
 
 type Player struct {
-	id           int  // ID of player
-	points       int  // Points that can be spent on upgrading cells or attacking
-	cellsCounter int  // Count of cells, owned user
-	attacking    bool // phase of player turn
+	id         int  // ID of player
+	points     int  // Points that can be spent on upgrading cells or attacking
+	cellsCount int  // Count of cells, owned user
+	attacking  bool // phase of player turn
 }
 
 // NewPlayer creates a new Player with the given ID.
@@ -37,6 +40,10 @@ func NewPlayer(id int) *Player {
 
 func (p *Player) Id() int {
 	return p.id
+}
+
+func (p *Player) Points() int {
+	return p.points
 }
 
 func (p *Player) attack() error {
@@ -69,11 +76,19 @@ func (p *Player) endUpgrade() {
 }
 
 func (p *Player) addCell() {
-	p.cellsCounter++
+	p.cellsCount++
 }
 
 func (p *Player) deleteCell() {
-	p.cellsCounter--
+	p.cellsCount--
 
 	// TODO: Realize loosing
+}
+
+func (p *Player) toMap() map[string]interface{} {
+	return map[string]interface{}{
+		"id":          p.id,
+		"points":      p.points,
+		"cells_count": p.cellsCount,
+	}
 }

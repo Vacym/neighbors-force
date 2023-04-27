@@ -65,3 +65,23 @@ func (b *Board) Rows() int {
 func (b *Board) Cols() int {
 	return b.cols
 }
+
+func (b *Board) toMap() map[string]interface{} {
+	return map[string]interface{}{
+		"rows":  b.rows,
+		"cols":  b.cols,
+		"cells": toCellInterfaceSlice(b.Cells),
+	}
+}
+
+func toCellInterfaceSlice(cells [][]cell) [][]interface{} {
+	result := make([][]interface{}, len(cells))
+	for i, row := range cells {
+		result[i] = make([]interface{}, len(row))
+		for j, c := range row {
+
+			result[i][j] = c.toMap()
+		}
+	}
+	return result
+}

@@ -22,6 +22,8 @@ type cell interface {
 	upgrade(points int) error
 
 	GetNeighbors(*Board) []cell
+
+	toMap() map[string]interface{}
 }
 
 type Cell struct {
@@ -135,4 +137,15 @@ func getNeighborCoords(row, col, boardRow, boardCol int) []coords {
 	}
 
 	return neighborCoords
+}
+
+func (c *Cell) toMap() map[string]interface{} {
+	result := map[string]interface{}{
+		"level": c.level,
+		"power": c.power,
+	}
+	if c.owner != nil {
+		result["owner_id"] = c.owner.Id()
+	}
+	return result
 }

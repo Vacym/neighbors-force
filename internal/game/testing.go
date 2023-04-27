@@ -13,7 +13,7 @@ func TestBoard() *Board {
 func TestPlayer(id int) *Player {
 	player := NewPlayer(id)
 	player.points = 10
-	player.cellsCounter = 10
+	player.cellsCount = 10
 	return player
 }
 

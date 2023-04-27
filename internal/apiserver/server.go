@@ -48,20 +48,6 @@ func (s *apiServer) configureRouter() {
 
 }
 
-func (s *apiServer) authenticatePlayer(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, err := s.sessionStore.Get(r, sessionName)
-		if err != nil {
-			s.error(w, r, http.StatusInternalServerError, err)
-			return
-		}
-
-		fmt.Println(session)
-
-		next.ServeHTTP(w, r)
-	})
-}
-
 func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := s.sessionStore.Get(r, sessionName)
@@ -118,7 +104,7 @@ func (s *apiServer) createGame() http.HandlerFunc {
 		user := r.Context().Value(ctxKeyUser).(*User)
 		user.Game = g
 
-		s.respond(w, r, http.StatusCreated, g)
+		s.respond(w, r, http.StatusCreated, g.ToMap())
 	}
 }
 
