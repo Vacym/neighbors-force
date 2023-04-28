@@ -44,3 +44,13 @@ func (u *User) attack(from, to game.Coords) error {
 	toCell := g.Board.Cells[to.Row][to.Col]
 	return g.Attack(g.Players[u.GameBox.UserId], fromCell, toCell)
 }
+
+func (u *User) endTurn() error {
+	g := u.GameBox.Game
+
+	if g == nil {
+		return errGameIsNotExist
+	}
+
+	return g.EndTurn(g.Players[u.GameBox.UserId])
+}

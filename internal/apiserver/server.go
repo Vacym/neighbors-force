@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/Vacym/neighbors-force/internal/bot"
 	"github.com/Vacym/neighbors-force/internal/game"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -51,6 +52,7 @@ func (s *apiServer) configureRouter() {
 	apiRouter.Use(s.UserMiddleware)
 	apiRouter.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
 	apiRouter.HandleFunc("/game/attack", s.handleMakeAttack()).Methods("POST")
+	apiRouter.HandleFunc("/game/end_turn", s.handleEndTurn()).Methods("POST")
 
 }
 
@@ -150,6 +152,29 @@ func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 		}
 
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
+	}
+}
+
+func (s *apiServer) handleEndTurn() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := r.Context().Value(ctxKeyUser).(*User)
+		err := user.endTurn()
+
+		if err != nil {
+			s.error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+
+		doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId)
+
+		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
+	}
+}
+
+func doAllBotsTurns(g *game.Game, playerId int) {
+	for g.Turn() != playerId {
+		bot.DoTurn(g, g.Players[g.Turn()].(*game.Player))
 	}
 }
 

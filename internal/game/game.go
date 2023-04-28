@@ -72,6 +72,10 @@ func NewPlayersSlice(numPlayers int) ([]player, error) {
 	return players, nil
 }
 
+func (g *Game) Turn() int {
+	return g.turn
+}
+
 // A method that automatically places players as far apart as possible depending on the board
 // Necessary and can be called only if there are no players on the field
 func (g *Game) placePlayers() {
@@ -153,6 +157,9 @@ func (g *Game) Upgrade(player player, target cell, points int) error {
 
 // Method for ending a player's turn
 func (g *Game) EndTurn(player player) error {
+	if player.Id() != g.turn {
+		return errNotPlayerTurn
+	}
 	player.endUpgrade()
 
 	// Implementation
