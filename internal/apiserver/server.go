@@ -3,6 +3,7 @@ package apiserver
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -10,6 +11,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+)
+
+var (
+	errIncorrectPlayerId = errors.New("incorrect player_id")
 )
 
 type key int
@@ -45,6 +50,7 @@ func (s *apiServer) configureRouter() {
 	apiRouter := s.router.PathPrefix("/api").Subrouter()
 	apiRouter.Use(s.UserMiddleware)
 	apiRouter.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
+	apiRouter.HandleFunc("/game/attack", s.handleMakeAttack()).Methods("POST")
 
 }
 
@@ -81,6 +87,7 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		Rows       int `json:"rows"`
 		Cols       int `json:"cols"`
 		NumPlayers int `json:"num_players"`
+		PlayerId   int `json:"player_id"`
 	}
 
 	fmt.Println("logging")
@@ -94,6 +101,11 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 			return
 		}
 
+		if req.PlayerId < 0 || req.PlayerId >= req.NumPlayers {
+			s.error(w, r, http.StatusUnprocessableEntity, errIncorrectPlayerId)
+			return
+		}
+
 		g, err := game.NewGame(req.Rows, req.Cols, req.NumPlayers)
 
 		if err != nil {
@@ -102,9 +114,42 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		}
 
 		user := r.Context().Value(ctxKeyUser).(*User)
-		user.Game = g
+		user.createGame(g, req.PlayerId)
 
 		s.respond(w, r, http.StatusCreated, g.ToMap())
+	}
+}
+
+func (s *apiServer) handleMakeAttack() http.HandlerFunc {
+	type request struct {
+		From struct {
+			Row int `json:"row"`
+			Col int `json:"col"`
+		} `json:"from"`
+		To struct {
+			Row int `json:"row"`
+			Col int `json:"col"`
+		} `json:"to"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.Body)
+		req := &request{}
+
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		user := r.Context().Value(ctxKeyUser).(*User)
+		err := user.attack(game.Coords(req.From), game.Coords(req.To))
+
+		if err != nil {
+			s.error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+
+		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
 

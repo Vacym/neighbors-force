@@ -20,12 +20,12 @@ type Game struct {
 
 // Creates a new Game with the random Board with given count of rows and cols and number of players
 func NewGame(rows, cols int, numPlayers int) (*Game, error) {
-	board, err := NewRandomBoard(rows, cols)
+	players, err := NewPlayersSlice(numPlayers)
 	if err != nil {
 		return nil, err
 	}
 
-	players, err := NewPlayersSlice(numPlayers)
+	board, err := NewRandomBoard(rows, cols)
 	if err != nil {
 		return nil, err
 	}

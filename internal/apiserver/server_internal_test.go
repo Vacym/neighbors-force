@@ -7,8 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Vacym/neighbors-force/internal/game"
 	"github.com/gorilla/sessions"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestServer_handleGameCreate(t *testing.T) {
@@ -21,6 +23,16 @@ func TestServer_handleGameCreate(t *testing.T) {
 	}{
 		{
 			name: "valid",
+			payload: map[string]int{
+				"rows":        3,
+				"cols":        3,
+				"num_players": 2,
+				"player_id":   0,
+			},
+			expectedCode: http.StatusCreated,
+		},
+		{
+			name: "no player_id",
 			payload: map[string]int{
 				"rows":        3,
 				"cols":        3,
@@ -93,6 +105,26 @@ func TestServer_handleGameCreate(t *testing.T) {
 			},
 			expectedCode: http.StatusUnprocessableEntity,
 		},
+		{
+			name: "negative player_id",
+			payload: map[string]int{
+				"rows":        3,
+				"cols":        3,
+				"num_players": 2,
+				"player_id":   -1,
+			},
+			expectedCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name: "user_id is excessive",
+			payload: map[string]int{
+				"rows":        3,
+				"cols":        3,
+				"num_players": 2,
+				"player_id":   4,
+			},
+			expectedCode: http.StatusUnprocessableEntity,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -108,67 +140,87 @@ func TestServer_handleGameCreate(t *testing.T) {
 			assert.Equal(t, tc.expectedCode, rec.Code)
 		})
 	}
-
 }
 
-// func TestServer_handleSessionsCreate(t *testing.T) {
-// 	s := newServer(sessions.NewCookieStore([]byte("secret")))
+func TestServer_handleMakeAttack(t *testing.T) {
+	s := newServer(sessions.NewCookieStore([]byte("secret")))
 
-// 	testCases := []struct {
-// 		name         string
-// 		payload      any
-// 		expectedCode int
-// 	}{
-// 		{
-// 			name: "valid",
-// 			payload: map[string]string{
-// 				"email":    u.Email,
-// 				"password": u.Password,
-// 			},
-// 			expectedCode: http.StatusOK,
-// 		},
-// 		{
-// 			name:         "invalid payload",
-// 			payload:      "invalid",
-// 			expectedCode: http.StatusBadRequest,
-// 		},
-// 		{
-// 			name: "invalid email",
-// 			payload: map[string]string{
-// 				"email":    "test@mail.org",
-// 				"password": u.Password,
-// 			},
-// 			expectedCode: http.StatusUnauthorized,
-// 		},
-// 		{
-// 			name: "invalid password",
-// 			payload: map[string]string{
-// 				"email":    u.Email,
-// 				"password": "invalid",
-// 			},
-// 			expectedCode: http.StatusUnauthorized,
-// 		},
-// 		{
-// 			name: "invalid both",
-// 			payload: map[string]string{
-// 				"email":    "test@mail.org",
-// 				"password": "invalid",
-// 			},
-// 			expectedCode: http.StatusUnauthorized,
-// 		},
-// 	}
+	testCases := []struct {
+		name         string
+		payload      any
+		expectedCode int
+	}{
+		{
+			name: "valid",
+			payload: map[string]game.Coords{
+				"from": {Row: 0, Col: 0},
+				"to":   {Row: 0, Col: 1},
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "invalid payload",
+			payload:      "invalid",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name: "negative coords",
+			payload: map[string]game.Coords{
+				"from": {Row: 0, Col: 0},
+				"to":   {Row: 0, Col: -1},
+			},
+			expectedCode: http.StatusUnprocessableEntity,
+		},
+	}
 
-// 	for _, tc := range testCases {
-// 		t.Run(tc.name, func(t *testing.T) {
-// 			rec := httptest.NewRecorder()
+	createGamePayload := map[string]int{
+		"rows":        3,
+		"cols":        3,
+		"num_players": 2,
+		"player_id":   0,
+	}
 
-// 			b := &bytes.Buffer{}
-// 			json.NewEncoder(b).Encode(tc.payload)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create game and save cookies
+			createGameRec := httptest.NewRecorder()
+			gameBuf := &bytes.Buffer{}
+			json.NewEncoder(gameBuf).Encode(createGamePayload)
+			createGameReq, _ := http.NewRequest(http.MethodPost, "/api/game/create", gameBuf)
 
-// 			req, _ := http.NewRequest(http.MethodPost, "/sessions", b)
+			s.ServeHTTP(createGameRec, createGameReq)
 
-// 			s.ServeHTTP(rec, req)
-// 			assert.Equal(t, tc.expectedCode, rec.Code)
-// 		})
-// 	}
-// }
+			cookies := createGameRec.Result().Cookies()
+
+			require.Equal(t, http.StatusCreated, createGameRec.Code)
+
+			rec := httptest.NewRecorder()
+
+			b := &bytes.Buffer{}
+			json.NewEncoder(b).Encode(tc.payload)
+
+			req, _ := http.NewRequest(http.MethodPost, "/api/game/attack", b)
+
+			// Add cookies to request
+			for _, c := range cookies {
+				req.AddCookie(c)
+			}
+
+			s.ServeHTTP(rec, req)
+			assert.Equal(t, tc.expectedCode, rec.Code)
+		})
+	}
+
+	// test without creating game
+	t.Run("game is not exist", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(testCases[0].payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/api/game/attack", b)
+
+		s.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	})
+}

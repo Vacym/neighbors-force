@@ -66,6 +66,13 @@ func (b *Board) Cols() int {
 	return b.cols
 }
 
+func (b *Board) IsInsideBoard(coords Coords) bool {
+	if coords.Row < 0 || coords.Col < 0 || coords.Row >= b.rows || coords.Col >= b.cols {
+		return false
+	}
+	return true
+}
+
 func (b *Board) toMap() map[string]interface{} {
 	return map[string]interface{}{
 		"rows":  b.rows,

@@ -7,16 +7,17 @@ var (
 	errNotEnoughPower = errors.New("power of cell must be more then 1 for attack")
 )
 
-type coords struct {
-	Row int // Row of the cell
-	Col int // Column of the cell
+type Coords struct {
+	Row int `json:"row"` // Row of the cell
+	Col int `json:"col"` // Column of the cell
 }
 
 type cell interface {
 	Level() int
 	Power() int
 	Owner() player
-	Coords() (row int, col int)
+	Row() int
+	Col() int
 
 	attack(target cell) error
 	upgrade(points int) error
@@ -27,10 +28,10 @@ type cell interface {
 }
 
 type Cell struct {
-	coords
-	level int    // Level of cell
-	power int    // Power of cell
-	owner player // Pointer of the player who owns the cell, nil if the cell is unoccupied
+	coords Coords
+	level  int    // Level of cell
+	power  int    // Power of cell
+	owner  player // Pointer of the player who owns the cell, nil if the cell is unoccupied
 }
 
 func (c Cell) Level() int {
@@ -45,19 +46,23 @@ func (c Cell) Owner() player {
 	return c.owner
 }
 
-func (c Cell) Coords() (int, int) {
-	return c.Row, c.Col
+func (c Cell) Row() int {
+	return c.coords.Row
+}
+
+func (c Cell) Col() int {
+	return c.coords.Col
 }
 
 func newCell(row, col int) *Cell {
 	return &Cell{
-		coords: coords{row, col},
+		coords: Coords{row, col},
 	}
 }
 
 func newCellWithParameters(row, col int, level, power int, owner player) *Cell {
 	return &Cell{
-		coords: coords{row, col},
+		coords: Coords{row, col},
 		level:  level,
 		power:  power,
 		owner:  owner,
@@ -68,7 +73,7 @@ func newCellWithParameters(row, col int, level, power int, owner player) *Cell {
 func (c Cell) GetNeighbors(board *Board) []cell {
 	neighbors := make([]cell, 0, 6)
 
-	neighborCoords := getNeighborCoords(c.Row, c.Col, board.Rows(), board.Cols())
+	neighborCoords := getNeighborCoords(c.Row(), c.Col(), board.Rows(), board.Cols())
 
 	for _, coord := range neighborCoords {
 		if board.Cells[coord.Row][coord.Col] != nil {
@@ -112,12 +117,12 @@ func (c *Cell) upgrade(points int) error {
 	return nil
 }
 
-func getNeighborCoords(row, col, boardRow, boardCol int) []coords {
+func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
 	// Offset is necessary because the hexagonal cells
 	// are not placed under each other.
 	// The offset depends on the row number.
 	offset := row % 2
-	neighborsRelative := [6]coords{
+	neighborsRelative := [6]Coords{
 		{-1, offset - 1}, // up-left
 		{-1, offset - 0}, // up-right
 		{+1, offset - 1}, // down-left
@@ -126,13 +131,13 @@ func getNeighborCoords(row, col, boardRow, boardCol int) []coords {
 		{0, +1},          // right
 	}
 
-	neighborCoords := make([]coords, 0, 6)
+	neighborCoords := make([]Coords, 0, 6)
 
 	for _, relative := range neighborsRelative {
 		neighborRow := row + relative.Row
 		neighborCol := col + relative.Col
 		if neighborRow >= 0 && neighborCol >= 0 && neighborRow < boardRow && neighborCol < boardCol {
-			neighborCoords = append(neighborCoords, coords{neighborRow, neighborCol})
+			neighborCoords = append(neighborCoords, Coords{neighborRow, neighborCol})
 		}
 	}
 

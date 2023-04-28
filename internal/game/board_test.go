@@ -102,9 +102,8 @@ func TestBoardIntegrity_NewRandomBoard(t *testing.T) {
 
 					for j, cell := range rowOfCells {
 						if cell != nil {
-							row, col := cell.Coords()
-							require.Equal(t, row, i)
-							require.Equal(t, col, j)
+							require.Equal(t, cell.Row(), i)
+							require.Equal(t, cell.Col(), j)
 
 							neighbors := cell.GetNeighbors(board)
 
