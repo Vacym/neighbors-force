@@ -23,7 +23,7 @@ func main() {
 
 	flag.Parse()
 
-	config := apiserver.NewConfig()
+	config := proxyserver.NewConfig()
 	_, err := toml.DecodeFile(configPath, config)
 	if err != nil {
 		log.Fatal(err)
@@ -39,22 +39,22 @@ func main() {
 	fmt.Println("start proxy server")
 }
 
-func startHTMLServer(config *apiserver.Config) {
-	if err := htmlserver.Start(":8082"); err != nil {
+func startHTMLServer(config *proxyserver.Config) {
+	if err := htmlserver.Start(config); err != nil {
 		log.Fatal(err)
 		fmt.Println(err)
 	}
 }
 
-func startAPIServer(config *apiserver.Config) {
+func startAPIServer(config *proxyserver.Config) {
 	if err := apiserver.Start(config); err != nil {
 		log.Fatal(err)
 		fmt.Println(err)
 	}
 }
 
-func startProxyServer(config *apiserver.Config) {
-	if err := proxyserver.Start(); err != nil {
+func startProxyServer(config *proxyserver.Config) {
+	if err := proxyserver.Start(config); err != nil {
 		log.Fatal(err)
 		fmt.Println(err)
 	}

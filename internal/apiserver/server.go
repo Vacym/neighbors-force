@@ -48,11 +48,10 @@ func (s *apiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *apiServer) configureRouter() {
-	apiRouter := s.router.PathPrefix("/api").Subrouter()
-	apiRouter.Use(s.UserMiddleware)
-	apiRouter.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
-	apiRouter.HandleFunc("/game/attack", s.handleMakeAttack()).Methods("POST")
-	apiRouter.HandleFunc("/game/end_turn", s.handleEndTurn()).Methods("POST")
+	s.router.Use(s.UserMiddleware)
+	s.router.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
+	s.router.HandleFunc("/game/attack", s.handleMakeAttack()).Methods("POST")
+	s.router.HandleFunc("/game/end_turn", s.handleEndTurn()).Methods("POST")
 
 }
 

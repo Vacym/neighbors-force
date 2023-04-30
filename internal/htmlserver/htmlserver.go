@@ -2,10 +2,12 @@ package htmlserver
 
 import (
 	"net/http"
+
+	"github.com/Vacym/neighbors-force/internal/proxyserver"
 )
 
-func Start(bindAddr string) error {
+func Start(config *proxyserver.Config) error {
 	s := NewServer()
 
-	return http.ListenAndServe(bindAddr, s)
+	return http.ListenAndServe(config.BindAddrHtml, s)
 }

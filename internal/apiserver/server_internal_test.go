@@ -134,7 +134,7 @@ func TestServer_handleGameCreate(t *testing.T) {
 			b := &bytes.Buffer{}
 			json.NewEncoder(b).Encode(tc.payload)
 
-			req, _ := http.NewRequest(http.MethodPost, "/api/game/create", b)
+			req, _ := http.NewRequest(http.MethodPost, "/game/create", b)
 
 			s.ServeHTTP(rec, req)
 			assert.Equal(t, tc.expectedCode, rec.Code)
@@ -186,7 +186,7 @@ func TestServer_handleMakeAttack(t *testing.T) {
 			createGameRec := httptest.NewRecorder()
 			gameBuf := &bytes.Buffer{}
 			json.NewEncoder(gameBuf).Encode(createGamePayload)
-			createGameReq, _ := http.NewRequest(http.MethodPost, "/api/game/create", gameBuf)
+			createGameReq, _ := http.NewRequest(http.MethodPost, "/game/create", gameBuf)
 
 			s.ServeHTTP(createGameRec, createGameReq)
 
@@ -199,7 +199,7 @@ func TestServer_handleMakeAttack(t *testing.T) {
 			b := &bytes.Buffer{}
 			json.NewEncoder(b).Encode(tc.payload)
 
-			req, _ := http.NewRequest(http.MethodPost, "/api/game/attack", b)
+			req, _ := http.NewRequest(http.MethodPost, "/game/attack", b)
 
 			// Add cookies to request
 			for _, c := range cookies {
@@ -218,7 +218,7 @@ func TestServer_handleMakeAttack(t *testing.T) {
 		b := &bytes.Buffer{}
 		json.NewEncoder(b).Encode(testCases[0].payload)
 
-		req, _ := http.NewRequest(http.MethodPost, "/api/game/attack", b)
+		req, _ := http.NewRequest(http.MethodPost, "/game/attack", b)
 
 		s.ServeHTTP(rec, req)
 		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)

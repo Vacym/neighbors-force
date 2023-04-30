@@ -4,20 +4,21 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
 
-func Start() error {
-	apiTargetURL, _ := url.Parse("http://localhost:8081")
+func Start(config *Config) error {
+	apiTargetURL, _ := url.Parse("http://localhost" + config.BindAddrApi)
 	apiProxy := httputil.NewSingleHostReverseProxy(apiTargetURL)
 
-	htmlTargetURL, _ := url.Parse("http://localhost:8082")
+	htmlTargetURL, _ := url.Parse("http://localhost" + config.BindAddrHtml)
 	htmlProxy := httputil.NewSingleHostReverseProxy(htmlTargetURL)
 
 	r := mux.NewRouter()
 	r.PathPrefix("/api/").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
+		r.URL.Path = strings.TrimPrefix(r.URL.Path, "/api")
 		apiProxy.ServeHTTP(w, r)
 	}).Methods("GET", "POST", "PUT", "DELETE")
 
@@ -25,5 +26,5 @@ func Start() error {
 		htmlProxy.ServeHTTP(w, r)
 	})
 
-	return http.ListenAndServe(":8080", r)
+	return http.ListenAndServe(config.BindAddrProxy, r)
 }
