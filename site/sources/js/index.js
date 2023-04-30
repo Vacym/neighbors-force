@@ -15,18 +15,36 @@ function sendFormData(formData) {
         body: JSON.stringify(stringObjectToNumbers(Object.fromEntries(formData)))
     };
 
-    return fetch('/api/game/create', requestData)
+    return fetch('api/game/create', requestData)
         .then(response => response.json());
 }
 
+function sendData(data, path) {
+    const requestData = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    };
+
+    return fetch(path, requestData)
+        .then(response => response.json());
+}
+
+function endTurn() {
+    sendData({}, "api/game/end_turn").
+        then(data => startNewGame(data))
+        .catch(error => console.error(error));
+}
+
 function startNewGame(data) {
+    game = data
     const board = data.board;
     const players = data.players;
     const turn = data.turn
 
     boardElement = renderNewBoard(board)
     markCanAttack(boardElement, turn)
-    addClickHandlers(boardElement)
+    addAttackClickHandlers(boardElement)
 }
 
 function renderNewBoard(board) {
@@ -84,7 +102,7 @@ function markCanAttack(boardElement, turn) {
     }
 }
 
-function addClickHandlers(boardElement) {
+function addAttackClickHandlers(boardElement) {
     const tables = boardElement.querySelectorAll('table');
 
     tables.forEach(table => {
@@ -92,38 +110,55 @@ function addClickHandlers(boardElement) {
 
         tds.forEach(td => {
             if (td.classList.contains('can-attack')) {
-                td.onclick = () => {
-                    console.log('click!');
-                    markCanBeAttacked(boardElement, this)
-
-                    const allTds = table.querySelectorAll('td');
-                    allTds.forEach(otherTd => {
-                        if (otherTd.classList.contains('can-be-attacked')) {
-                            otherTd.onclick = () => {
-                                console.log('Other cell clicked!');
-                                unmarkCanBeAttacked(boardElement)
-                            };
-                        }
-                    });
-                };
+                td.onclick = (event) => { addCanBeAttackedClickHandlers(boardElement, event) }
             } else {
                 td.onclick = null;
             }
         });
     });
-
-    // document.onclick = (event) => {
-    //     const target = event.target;
-
-    //     if (!target.matches('td')) {
-    //         tables.forEach(table => {
-    //             const tds = table.querySelectorAll('td');
-    //             tds.forEach(td => {
-    //                 td.onclick = null;
-    //             });
-    //         });
-    //     }
 };
+
+function addCanBeAttackedClickHandlers(boardElement, event) {
+    const tables = boardElement.querySelectorAll('table');
+    let attackCellCoords = determineCoords(event.currentTarget.id, game.board.rows, game.board.cols)
+    console.log("attackCellCoords", attackCellCoords)
+    console.log('click attack!');
+
+    markCanBeAttacked(boardElement, this)
+
+    tables.forEach(table => {
+        const allTds = table.querySelectorAll('td');
+        allTds.forEach(otherTd => {
+            if (otherTd.classList.contains('can-be-attacked')) {
+                otherTd.onclick = (event) => {
+                    console.log('Other cell attacked!');
+                    let attackedCellCoords = determineCoords(event.currentTarget.id, game.board.rows, game.board.cols)
+                    console.log("attackedCellCoords", attackedCellCoords)
+                    removeCanBeAttackedClickHandlers(boardElement)
+                    unmarkCanBeAttacked(boardElement)
+
+                    sendData({ from: attackCellCoords, to: attackedCellCoords }, '/api/game/attack')
+                        .then(data => startNewGame(data))
+                        .catch(error => console.error(error));
+                };
+            }
+        })
+    });
+}
+
+function removeCanBeAttackedClickHandlers(boardElement) {
+    const tables = boardElement.querySelectorAll('table');
+
+    tables.forEach(table => {
+        const tds = table.querySelectorAll('td');
+
+        tds.forEach(td => {
+            if (td.classList.contains('can-be-attacked')) {
+                td.onclick = null
+            }
+        })
+    })
+}
 
 
 function markCanBeAttacked(boardElement, attackTd) {
@@ -154,6 +189,12 @@ function unmarkCanBeAttacked(boardElement, attackTd) {
     })
 }
 
+function determineCoords(id, rows, cols) {
+    id = Number(id)
+    return { row: Math.floor(id / rows), col: id % cols }
+}
+
+var game
 
 function main() {
     const form = document.querySelector('#game-form');
@@ -166,6 +207,9 @@ function main() {
             .then(data => startNewGame(data))
             .catch(error => console.error(error));
     });
+
+    const endTurnButton = document.querySelector('#end-turn');
+    endTurnButton.onclick = endTurn
 }
 
 document.addEventListener('DOMContentLoaded', main);
