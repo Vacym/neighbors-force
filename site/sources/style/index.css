@@ -1,0 +1,90 @@
+html {
+    height: 100%;
+    font-family: sans-serif;
+    color: #fff;
+    background-color: #000;
+}
+
+
+td {
+    width: 54px;
+    height: 62px;
+    vertical-align: middle;
+    padding: 0 0;
+}
+
+svg {
+    width: 54px;
+    height: 62px;
+}
+
+table:nth-child(2n) {
+    margin-left: 28px;
+}
+
+use {
+    fill: none;
+}
+
+td[owner-id="0"] use {
+    fill: #00BFFF
+}
+td[owner-id="1"] use {
+    fill: #9DF020
+}
+td[owner-id="2"] use {
+    fill: #FFA500
+}
+td[owner-id="3"] use {
+    fill: #FF69B4
+}
+
+td:not([owner-id]) use {
+    fill: #BFBFBF
+}
+
+
+.can-attack[owner-id="0"] .num:hover ~ svg use {
+    fill: #4DD2FF;
+}
+
+.can-attack[owner-id="1"] .num:hover ~ svg use {
+    fill: #BCF568;
+}
+
+.can-attack[owner-id="2"] .num:hover ~ svg use {
+    fill: #FFC04D;
+}
+
+.can-attack[owner-id="3"] .num:hover ~ svg use {
+    fill: #FFB5DA;
+}
+
+#board {
+    cursor: default;
+}
+
+.can-attack .num {
+    cursor: pointer;
+}
+
+#board table {
+    position: relative;
+    margin-top: -18px;
+}
+
+#board table:first-child {  
+    margin-top: 0px;
+}
+
+.num {
+    display: block;
+    position: absolute;
+    width: 54px;
+    height: 62px;
+    text-align: center;
+    line-height: 62px;
+    font-size: 22px;
+    color: #000;
+    font-weight: bold;
+}
