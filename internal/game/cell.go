@@ -1,10 +1,14 @@
 package game
 
-import "errors"
+import (
+	"errors"
+	"math"
+)
 
 var (
 	errSamePlayerCell = errors.New("target cell already belongs to the same player")
 	errNotEnoughPower = errors.New("power of cell must be more then 1 for attack")
+	errIsNotNeighbor  = errors.New("cell can attack only it's neighbor")
 )
 
 type Coords struct {
@@ -93,6 +97,9 @@ func (c *Cell) attack(targetInterface cell) error {
 	if c.power <= 1 {
 		return errNotEnoughPower
 	}
+	if !c.isNeighbor(target) {
+		return errIsNotNeighbor
+	}
 
 	attackPower := c.power - 1
 	c.power = 1
@@ -142,6 +149,18 @@ func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
 	}
 
 	return neighborCoords
+}
+
+func (c *Cell) isNeighbor(cell2 *Cell) bool {
+	cell1 := c
+	if cell1.Row() == cell2.Row() && math.Abs(float64(cell1.Col()-cell2.Col())) == 1 {
+		return true
+	} else if math.Abs(float64(cell1.Row()-cell2.Row())) == 1 {
+		offset := cell1.Row() % 2
+		return cell1.Col()-cell2.Col() == 0-offset || cell1.Col()-cell2.Col() == 1-offset
+	} else {
+		return false
+	}
 }
 
 func (c *Cell) toMap() map[string]interface{} {

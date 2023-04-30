@@ -35,6 +35,22 @@ func TestCell_attack(t *testing.T) {
 			true,
 		},
 		{
+			"Too far attack 1",
+			1, 0,
+			0, 2,
+			-1,
+			false,
+			false,
+		},
+		{
+			"Too far attack 2",
+			0, 1,
+			1, 2,
+			-1,
+			false,
+			false,
+		},
+		{
 			"Not enough power for attack 1",
 			0, 0,
 			0, 1,
