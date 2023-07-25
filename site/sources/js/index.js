@@ -19,6 +19,14 @@ function sendFormData(formData) {
         .then(response => response.json());
 }
 
+async function fetchMap() {
+    const response = await fetch('api/game/get_map');
+    if (!response.ok) {
+        throw new Error('Failed to fetch the map');
+    }
+    return response.json();
+}
+
 function sendData(data, path) {
     const requestData = {
         method: 'POST',
@@ -30,10 +38,30 @@ function sendData(data, path) {
         .then(response => response.json());
 }
 
+function endAttack() {
+    sendData({}, "api/game/end_attack").
+        then(data => startUpgrade(data))
+        .catch(error => console.error(error));
+}
+
 function endTurn() {
     sendData({}, "api/game/end_turn").
         then(data => startNewGame(data))
         .catch(error => console.error(error));
+}
+
+
+async function recover() {
+    try {
+        const data = await fetchMap();
+        if (data.players[data.turn].attacking === true) {
+            startNewGame(data);
+        } else {
+            startUpgrade(data);
+        }
+    } catch (error) {
+        console.error('Error while restoring the game:', error);
+    }
 }
 
 function startNewGame(data) {
@@ -43,8 +71,26 @@ function startNewGame(data) {
     const turn = data.turn
 
     boardElement = renderNewBoard(board)
+    renderScores(players[turn].points)
     markCanAttack(boardElement, turn)
     addAttackClickHandlers(boardElement)
+}
+
+function startUpgrade(data) {
+    game = data
+    const board = data.board;
+    const players = data.players;
+    const turn = data.turn
+
+    boardElement = renderNewBoard(board)
+    renderScores(players[turn].points)
+    markCanUpgrade(boardElement, turn)
+    addUpgradeClickHandlers(boardElement)
+}
+
+function renderScores(scores) {
+    const scoreElement = document.getElementById('score');
+    scoreElement.textContent = scores;
 }
 
 function renderNewBoard(board) {
@@ -65,10 +111,13 @@ function renderNewBoard(board) {
                 td.setAttribute("owner-id", cell.owner_id);
             }
 
-            const div = document.createElement("div");
-            div.classList.add("num");
-            div.id = "cell-n-" + (row * board.cols + col);
-            div.innerText = cell.power;
+            const divPower = document.createElement("div");
+            divPower.classList.add("num", "power");
+            divPower.innerText = cell.power;
+
+            const divLevel = document.createElement("div");
+            divLevel.classList.add("num", "level");
+            divLevel.innerText = cell.level;
 
             const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 
@@ -76,8 +125,9 @@ function renderNewBoard(board) {
             use.setAttribute("href", "#hexagon");
             svg.appendChild(use);
 
-            td.appendChild(div);
             td.appendChild(svg);
+            td.appendChild(divPower);
+            td.appendChild(divLevel);
             tbody.appendChild(td);
         }
         boardElement.appendChild(table);
@@ -189,6 +239,44 @@ function unmarkCanBeAttacked(boardElement, attackTd) {
     })
 }
 
+function markCanUpgrade(boardElement, turn) {
+    const tables = boardElement.getElementsByTagName('table');
+    for (let i = 0; i < tables.length; i++) {
+        const cells = tables[i].getElementsByTagName('td');
+        for (let j = 0; j < cells.length; j++) {
+            const cell = cells[j];
+            const owner_id = parseInt(cell.getAttribute('owner-id'));
+            if (owner_id == turn) {
+                cell.classList.add('can-upgrade');
+            } else {
+                cell.classList.remove('can-upgrade');
+            }
+        }
+    }
+}
+
+function addUpgradeClickHandlers(boardElement) {
+    const tables = boardElement.querySelectorAll('table');
+
+    tables.forEach(table => {
+        const tds = table.querySelectorAll('td');
+
+        tds.forEach(td => {
+            if (td.classList.contains('can-upgrade')) {
+                td.onclick = (event) => {
+                    console.log('Cell upgraded!');
+                    let upgradedCellCoords = determineCoords(event.currentTarget.id, game.board.rows, game.board.cols)
+                    console.log("upgradedCellCoords", upgradedCellCoords)
+
+                    sendData({ cell: upgradedCellCoords, levels: 1 }, '/api/game/upgrade')
+                        .then(data => startUpgrade(data))
+                        .catch(error => console.error(error));
+                };
+            }
+        });
+    });
+};
+
 function determineCoords(id, rows, cols) {
     id = Number(id)
     return { row: Math.floor(id / rows), col: id % cols }
@@ -208,8 +296,12 @@ function main() {
             .catch(error => console.error(error));
     });
 
+    const endAttackButton = document.querySelector('#end-attack');
+    endAttackButton.onclick = endAttack
     const endTurnButton = document.querySelector('#end-turn');
     endTurnButton.onclick = endTurn
+    const recoverButton = document.querySelector('#recover');
+    recoverButton.onclick = recover
 }
 
 document.addEventListener('DOMContentLoaded', main);

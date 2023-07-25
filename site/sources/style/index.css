@@ -5,6 +5,14 @@ html {
     background-color: #000;
 }
 
+.unselectable {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 
 td {
     width: 54px;
@@ -77,14 +85,47 @@ td:not([owner-id]) use {
     margin-top: 0px;
 }
 
-.num {
-    display: block;
-    position: absolute;
+
+td {
     width: 54px;
     height: 62px;
-    text-align: center;
-    line-height: 62px;
-    font-size: 22px;
-    color: #000;
-    font-weight: bold;
+    vertical-align: middle;
+    padding: 0;
+    position: relative;
 }
+  
+  
+svg {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+  
+.num {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #000;
+    font-size: 16px;
+    pointer-events: none;
+}
+
+.power {
+    top: 32%;
+    left: 65%;
+}
+  
+.level {
+    top: 68%;
+    left: 35%;
+}
+
+
+.score-counter {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: white;
+    font-size: 18px;
+  }
