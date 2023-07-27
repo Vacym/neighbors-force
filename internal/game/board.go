@@ -1,6 +1,8 @@
 package game
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	errIncorrectBoardSize = errors.New("board size cannot be less then 2")
@@ -49,13 +51,6 @@ func NewBoard(rows, cols int) (*Board, error) {
 	return board, nil
 }
 
-func NewRandomBoard(rows, cols int) (*Board, error) {
-	// PLUG
-	// TODO: make generation random board
-
-	return NewBoard(rows, cols)
-}
-
 // Returns num of rows of the hexagonal board
 func (b *Board) Rows() int {
 	return b.rows
@@ -86,8 +81,11 @@ func toCellInterfaceSlice(cells [][]cell) [][]interface{} {
 	for i, row := range cells {
 		result[i] = make([]interface{}, len(row))
 		for j, c := range row {
-
-			result[i][j] = c.toMap()
+			if c == nil {
+				result[i][j] = nil
+			} else {
+				result[i][j] = c.toMap()
+			}
 		}
 	}
 	return result

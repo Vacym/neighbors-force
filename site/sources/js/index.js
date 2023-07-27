@@ -60,24 +60,26 @@ function renderNewBoard(board) {
             const cell = board.cells[row][col];
             const td = document.createElement("td");
             td.id = row * board.cols + col;
-            td.setAttribute("power", cell.power);
-            if (cell.owner_id >= 0) {
-                td.setAttribute("owner-id", cell.owner_id);
+            if (cell != undefined) {
+                td.setAttribute("power", cell.power);
+                if (cell.owner_id >= 0) {
+                    td.setAttribute("owner-id", cell.owner_id);
+                }
+
+                const div = document.createElement("div");
+                div.classList.add("num");
+                div.id = "cell-n-" + (row * board.cols + col);
+                div.innerText = cell.power;
+
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+                const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+                use.setAttribute("href", "#hexagon");
+                svg.appendChild(use);
+
+                td.appendChild(div);
+                td.appendChild(svg);
             }
-
-            const div = document.createElement("div");
-            div.classList.add("num");
-            div.id = "cell-n-" + (row * board.cols + col);
-            div.innerText = cell.power;
-
-            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-
-            const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-            use.setAttribute("href", "#hexagon");
-            svg.appendChild(use);
-
-            td.appendChild(div);
-            td.appendChild(svg);
             tbody.appendChild(td);
         }
         boardElement.appendChild(table);
