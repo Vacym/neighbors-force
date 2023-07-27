@@ -73,8 +73,8 @@ func DoUpgrade(g *game.Game, player *game.Player) error {
 		randomIndex := rand.Intn(len(ownedCells))
 		cellToUpgrade := ownedCells[randomIndex]
 
-		// Calculate the cost to upgrade the cell (equal to the cell's level)
-		upgradeCost := cellToUpgrade.Level()
+		// Calculate the cost to upgrade the cell
+		upgradeCost := (cellToUpgrade.Level() * (cellToUpgrade.Level() + 1)) / 2
 
 		// Check if the player has enough points to perform the upgrade
 		if player.Points() >= upgradeCost {

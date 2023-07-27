@@ -106,18 +106,29 @@ func (c *Cell) attack(targetInterface cell) error {
 		return errIsNotNeighbor
 	}
 
-	attackPower := c.power
+	err := target.handleAttack(c)
+	if err != nil {
+		return err
+	}
+
 	c.power = 1
-	target.power -= attackPower
 
-	if target.power < 0 {
-		if target.owner != nil {
-			target.owner.deleteCell()
+	return nil
+}
+
+func (c *Cell) handleAttack(attacker cell) error {
+	attackPower := attacker.Power()
+	c.power -= attackPower
+
+	if c.power < 0 {
+		if c.Owner() != nil {
+			c.Owner().deleteCell()
 		}
-		c.owner.addCell()
+		attacker.Owner().addCell()
 
-		target.power = -target.power
-		target.owner = c.owner
+		c.power = -c.power
+		c.owner = attacker.Owner()
+		c.level = 1
 	}
 
 	return nil

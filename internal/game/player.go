@@ -77,8 +77,9 @@ func (p *Player) upgrade(cell cell, levels int) error {
 		return errUpgradeTurnNotReached
 	}
 
-	// Arithmetic progression
-	cost := (2*cell.Level() + levels - 1) * levels / 2
+	// Sum of triangle numbers
+	targetLevel := cell.Level() + levels
+	cost := ((targetLevel-1)*(targetLevel)*(targetLevel+1) - (cell.Level()-1)*(cell.Level())*(cell.Level()+1)) / 6
 
 	if p.points < cost {
 		return errNotEnoughPoints
