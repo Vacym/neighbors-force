@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	errIncorrectBoardSize = errors.New("board size cannot be less then 2")
+	errIncorrectBoardSize = errors.New("board size cannot be even or less than 3")
 )
 
 /*

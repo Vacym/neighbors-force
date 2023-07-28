@@ -107,7 +107,7 @@ func findNearestCell(board *Board, row, col int) cell {
 	var offset int
 	if col > board.cols/2 {
 		offset = 1
-		if row&2 == 0 {
+		if row%2 == 0 {
 			offset = -offset
 		}
 	}

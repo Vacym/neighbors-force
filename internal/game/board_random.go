@@ -10,6 +10,10 @@ type borders struct {
 }
 
 func NewRandomBoard(rows, cols int) (*Board, error) {
+	if rows < 3 || cols < 3 || rows%2 == 0 || cols%2 == 0 {
+		return nil, errIncorrectBoardSize
+	}
+
 	// We'll generate only a quarter of the field, then reflect it back
 	halfRows := rows/2 + rows%2
 	halfCols := cols/2 + cols%2
