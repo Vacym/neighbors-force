@@ -9,14 +9,14 @@ var (
 )
 
 /*
-In every board even row lefter of the odd
+In every board even row shorter of the odd
 
 for example NewBoard(5, 6)
 
 ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
- ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
+ ⬢ ⬢ ⬢ ⬢ ⬢
 ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
- ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
+ ⬢ ⬢ ⬢ ⬢ ⬢
 ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
 */
 
@@ -35,7 +35,7 @@ func NewBoard(rows, cols int) (*Board, error) {
 	cells := make([][]cell, rows)
 
 	for i := range cells {
-		cells[i] = make([]cell, cols)
+		cells[i] = make([]cell, cols-i%2)
 
 		for j := range cells[i] {
 			cells[i][j] = newCell(i, j)

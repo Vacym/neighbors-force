@@ -143,7 +143,7 @@ func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
 	for _, relative := range neighborsRelative {
 		neighborRow := row + relative.Row
 		neighborCol := col + relative.Col
-		if neighborRow >= 0 && neighborCol >= 0 && neighborRow < boardRow && neighborCol < boardCol {
+		if neighborRow >= 0 && neighborCol >= 0 && neighborRow < boardRow && neighborCol < boardCol-neighborRow%2 {
 			neighborCoords = append(neighborCoords, Coords{neighborRow, neighborCol})
 		}
 	}

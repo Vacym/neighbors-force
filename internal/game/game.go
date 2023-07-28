@@ -1,6 +1,8 @@
 package game
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
 	errTooSmallPlayers      = errors.New("game cannot be played with less than 2 players")
@@ -79,22 +81,62 @@ func (g *Game) Turn() int {
 // A method that automatically places players as far apart as possible depending on the board
 // Necessary and can be called only if there are no players on the field
 func (g *Game) placePlayers() {
-	// PLUG
-	// TODO: make normal placing
+	const startPower = 2
+	const startLevel = 1
 
-	// It's temporary!!!
 	for idx, player := range g.Players {
+		var c cell
 		switch idx {
 		case 0:
-			g.Board.Cells[0][0] = newCellWithParameters(0, 0, 1, 2, player)
+			c = findNearestCell(g.Board, 0, 0)
 		case 1:
-			g.Board.Cells[0][g.Board.cols-1] = newCellWithParameters(0, g.Board.cols-1, 1, 2, player)
+			c = findNearestCell(g.Board, g.Board.rows-1, g.Board.cols-1)
 		case 2:
-			g.Board.Cells[g.Board.rows-1][g.Board.cols-1] = newCellWithParameters(g.Board.rows-1, g.Board.cols-1, 1, 2, player)
+			c = findNearestCell(g.Board, g.Board.rows-1, 0)
 		case 3:
-			g.Board.Cells[g.Board.rows-1][0] = newCellWithParameters(g.Board.rows-1, 0, 1, 2, player)
+			c = findNearestCell(g.Board, 0, g.Board.cols-1)
+		}
+		g.Board.Cells[c.Row()][c.Col()] = newCellWithParameters(c.Row(), c.Col(), startLevel, startPower, player)
+	}
+}
+
+// findNearestCell finds the nearest cell to a given row and column coordinates
+// considering the constraints of the board's dimensions.
+func findNearestCell(board *Board, row, col int) cell {
+	// Offset for mirror columns
+	var offset int
+	if col > board.cols/2 {
+		offset = 1
+		if row&2 == 0 {
+			offset = -offset
 		}
 	}
+
+	for dist := 0; dist < max(board.cols, board.rows); dist++ {
+		// Search left
+		if col-dist >= 0 && board.Cells[row][col-dist] != nil {
+			return board.Cells[row][col-dist]
+		}
+		// Search right
+		if col+dist < board.cols-row%2 && board.Cells[row][col+dist] != nil {
+			return board.Cells[row][col+dist]
+		}
+
+		var locOffset int
+		if dist%2 == 1 {
+			locOffset = offset
+		}
+
+		// Search up
+		if row-dist >= 0 && board.Cells[row-dist][col+locOffset] != nil {
+			return board.Cells[row-dist][col+locOffset]
+		}
+		// Search down
+		if row+dist < board.rows && board.Cells[row+dist][col+locOffset] != nil {
+			return board.Cells[row+dist][col+locOffset]
+		}
+	}
+	return nil
 }
 
 func (g *Game) countPlayersCell() {
@@ -187,4 +229,20 @@ func toPlayerInterfaceSlice(players []player) []interface{} {
 		result[i] = p.toMap()
 	}
 	return result
+}
+
+func min(x, y int) int {
+	// Delete after Go 1.21 (Q3 2023)
+	if x < y {
+		return x
+	}
+	return y
+}
+
+func max(x, y int) int {
+	// Delete after Go 1.21 (Q3 2023)
+	if x > y {
+		return x
+	}
+	return y
 }

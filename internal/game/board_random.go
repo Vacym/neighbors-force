@@ -17,12 +17,12 @@ func NewRandomBoard(rows, cols int) (*Board, error) {
 	cells := make([][]cell, halfRows, rows)
 
 	for i := range cells {
-		cells[i] = make([]cell, halfCols, cols)
+		cells[i] = make([]cell, halfCols-i%2, cols)
 	}
 
 	rand.Seed(time.Now().UnixNano())
 	startRow := rand.Intn(halfRows)
-	startCol := rand.Intn(halfCols)
+	startCol := rand.Intn(halfCols - startRow%2)
 
 	var newBorders borders
 
@@ -32,13 +32,23 @@ func NewRandomBoard(rows, cols int) (*Board, error) {
 	// Reflect the map vertically
 	for i := 0; i < halfRows; i++ {
 		for j := cols/2 - 1; j >= 0; j-- {
-			cells[i] = append(cells[i], cells[i][j])
+			if cells[i][j] != nil {
+				cells[i] = append(cells[i], newCell(i, len(cells[i])))
+			} else {
+				cells[i] = append(cells[i], nil)
+			}
 		}
 	}
 
 	// Reflect the map horizontally
 	for i := rows/2 - 1; i >= 0; i-- {
-		cells = append(cells, cells[i])
+		cells = append(cells, make([]cell, len(cells[i])))
+		lastI := len(cells) - 1
+		for j := range cells[lastI] {
+			if cells[i][j] != nil {
+				cells[lastI][j] = newCell(lastI, j)
+			}
+		}
 	}
 
 	board := &Board{
@@ -68,7 +78,7 @@ func generateHexMap(row, col, boardRow, boardCol int, cells [][]cell, borders *b
 	if col == 0 {
 		borders.left = true
 	}
-	if col == boardCol-1 {
+	if col == boardCol-1-row%2 {
 		borders.right = true
 	}
 
