@@ -22,7 +22,7 @@ func TestCell_attack(t *testing.T) {
 			"Valid attack and win 1",
 			1, 0,
 			1, 1,
-			4,
+			5,
 			true,
 			true,
 		},
@@ -30,7 +30,7 @@ func TestCell_attack(t *testing.T) {
 			"Valid attack and win 2",
 			0, 1,
 			0, 0,
-			4,
+			5,
 			true,
 			true,
 		},
@@ -70,7 +70,7 @@ func TestCell_attack(t *testing.T) {
 			"only damage 1",
 			0, 2,
 			0, 1,
-			2,
+			1,
 			false,
 			true,
 		},
@@ -78,7 +78,7 @@ func TestCell_attack(t *testing.T) {
 			"only damage 2",
 			2, 1,
 			1, 0,
-			4,
+			3,
 			false,
 			true,
 		},
@@ -137,9 +137,9 @@ func TestCell_attack(t *testing.T) {
 			if tc.isValid {
 				require.NoError(t, err)
 				// Check the result of cell1.Power() after the attack
-				assert.Equal(t, 1, cell1.Power(), "Expected cell power to be %d, but got %d", 1, cell1.Power())
+				assert.Equal(t, 1, cell1.Power(), "Expected cell1 power to be %d, but got %d", 1, cell1.Power())
 				// Check the result of cell2.Power() after the attack
-				assert.Equal(t, tc.expectedPower, cell2.Power(), "Expected cell power to be %d, but got %d", tc.expectedPower, cell2.Power())
+				assert.Equal(t, tc.expectedPower, cell2.Power(), "Expected cell2 power to be %d, but got %d", tc.expectedPower, cell2.Power())
 
 				// Check the result of cell2.Owner() after the attack
 				assert.Equal(t, attacker, cell1.Owner(), "Expected player1 to be same as cell1.Owner()")
@@ -167,14 +167,26 @@ func TestCell_upgrade(t *testing.T) {
 		{
 			"valid upgrade 1",
 			0, 0,
-			8,
+			1,
 			true,
 		},
 		{
 			"valid upgrade 2",
 			0, 1,
-			6,
+			2,
 			true,
+		},
+		{
+			"invalid upgrade 1",
+			0, 3,
+			2,
+			false,
+		},
+		{
+			"valid upgrade 2",
+			1, 1,
+			2,
+			false,
 		},
 	}
 
@@ -188,16 +200,20 @@ func TestCell_upgrade(t *testing.T) {
 			cell := board.Cells[tc.row][tc.col]
 
 			if cell.Owner().Id() != 0 {
-				thisGame.EndTurn(players[0])
+				err := thisGame.EndTurn(players[0])
+				require.NoError(t, err)
 			}
-			thisGame.EndAttack(cell.Owner())
+			err = thisGame.EndAttack(cell.Owner())
+			require.NoError(t, err)
+
+			previousLevel := cell.Level()
 
 			err = thisGame.Upgrade(cell.Owner(), cell, tc.addLevel)
 
 			if tc.isValid {
 				require.NoError(t, err)
 				// Check the result of cell1.Power() after the attack
-				assert.Equal(t, 1+tc.addLevel, cell.Level(), "Expected cell level to be %d, but got %d", 1+tc.addLevel, cell.Level())
+				assert.Equal(t, previousLevel+tc.addLevel, cell.Level(), "Expected cell level to be %d, but got %d", previousLevel+tc.addLevel, cell.Level())
 			} else {
 				require.Error(t, err)
 			}
