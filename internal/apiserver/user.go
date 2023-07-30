@@ -62,6 +62,10 @@ func (u *User) endAttack() error {
 func (u *User) makeUpgrade(cellCoords game.Coords, levels int) error {
 	g := u.GameBox.Game
 
+	if g == nil {
+		return errGameIsNotExist
+	}
+
 	cell, err := g.Board.GetCell(cellCoords)
 	if err != nil {
 		return err

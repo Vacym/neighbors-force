@@ -223,6 +223,11 @@ func (s *apiServer) handleGetMap() http.HandlerFunc {
 
 		user := r.Context().Value(ctxKeyUser).(*User)
 
+		if user.GameBox.Game == nil {
+			s.error(w, r, http.StatusUnprocessableEntity, errGameIsNotExist)
+			return
+		}
+
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
