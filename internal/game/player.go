@@ -5,7 +5,8 @@ import "errors"
 var (
 	errAttackTurnExpired     = errors.New("Attack turn has expired")
 	errUpgradeTurnNotReached = errors.New("Upgrade time has not been reached")
-	errNotEnoughPoints       = errors.New("not enough points to upgrade")
+	errNotEnoughPoints       = errors.New("Not enough points to upgrade")
+	errAttackAlreadyFinished = errors.New("Attack already finished")
 )
 
 type player interface {
@@ -13,8 +14,8 @@ type player interface {
 	Points() int // points of player
 
 	attack() error
-	endAttack()
-	upgrade(points int) error
+	endAttack() error
+	upgrade(cell cell, levels int) error
 	endUpgrade()
 
 	addCell()
@@ -22,6 +23,8 @@ type player interface {
 
 	toMap() map[string]interface{}
 }
+
+type PlayerInterface = player
 
 type Player struct {
 	id         int  // ID of player
@@ -54,24 +57,43 @@ func (p *Player) attack() error {
 	return nil
 }
 
-func (p *Player) endAttack() {
+func (p *Player) endAttack() error {
+	if p.attacking == false {
+		return errAttackAlreadyFinished
+	}
+
 	p.attacking = false
+	p.countPoints()
+	return nil
+}
+
+func (p *Player) countPoints() {
+	p.points += p.cellsCount
 }
 
 // Method for upgrading a cell owned by a player
-func (p *Player) upgrade(points int) error {
+func (p *Player) upgrade(cell cell, levels int) error {
 	if p.attacking {
 		return errUpgradeTurnNotReached
 	}
-	if p.points < points {
+
+	// Sum of triangle numbers
+	targetLevel := cell.Level() + levels
+	cost := ((targetLevel-1)*(targetLevel)*(targetLevel+1) - (cell.Level()-1)*(cell.Level())*(cell.Level()+1)) / 6
+
+	if p.points < cost {
 		return errNotEnoughPoints
 	}
-	p.points -= points
+	p.points -= cost
 
 	return nil
 }
 
 func (p *Player) endUpgrade() {
+	if p.attacking == true {
+		p.endAttack()
+	}
+
 	p.attacking = true
 }
 
@@ -90,5 +112,6 @@ func (p *Player) toMap() map[string]interface{} {
 		"id":          p.id,
 		"points":      p.points,
 		"cells_count": p.cellsCount,
+		"attacking":   p.attacking,
 	}
 }

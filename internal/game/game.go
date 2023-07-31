@@ -131,12 +131,11 @@ func (g *Game) EndAttack(player player) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
-	player.endAttack()
 
-	return nil
+	return player.endAttack()
 }
 
-func (g *Game) Upgrade(player player, target cell, points int) error {
+func (g *Game) Upgrade(player player, target cell, levels int) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -146,11 +145,11 @@ func (g *Game) Upgrade(player player, target cell, points int) error {
 	if target.Owner() != player {
 		return errInvalidUpgradingCell
 	}
-	if err := player.upgrade(points); err != nil {
+	if err := player.upgrade(target, levels); err != nil {
 		return err
 	}
 
-	err := target.upgrade(points)
+	err := target.upgrade(levels)
 
 	return err
 }
@@ -162,7 +161,7 @@ func (g *Game) EndTurn(player player) error {
 	}
 	player.endUpgrade()
 
-	// Implementation
+	g.Board.calculatePower(player)
 
 	g.NextTurn()
 
