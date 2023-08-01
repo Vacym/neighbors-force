@@ -27,6 +27,7 @@ const (
 
 type apiServer struct {
 	router       *mux.Router
+	testRouter   *mux.Router // Отдельный роутер для тестовых хендлеров
 	sessionStore sessions.Store
 	activeUsers  map[string]*User
 }
@@ -34,6 +35,7 @@ type apiServer struct {
 func newServer(sessionStore sessions.Store) *apiServer {
 	s := &apiServer{
 		router:       mux.NewRouter(),
+		testRouter:   mux.NewRouter(),
 		sessionStore: sessionStore,
 		activeUsers:  make(map[string]*User),
 	}
@@ -47,12 +49,19 @@ func (s *apiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
+func (s *apiServer) ServeTestHTTP(w http.ResponseWriter, r *http.Request) {
+	s.testRouter.ServeHTTP(w, r)
+}
+
 func (s *apiServer) configureRouter() {
 	s.router.Use(s.UserMiddleware)
 	s.router.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
 	s.router.HandleFunc("/game/attack", s.handleMakeAttack()).Methods("POST")
 	s.router.HandleFunc("/game/end_turn", s.handleEndTurn()).Methods("POST")
 
+	// Add a test handler, which is only used in tests.
+	s.testRouter.Use(s.UserMiddleware)
+	s.testRouter.HandleFunc("/test/create_full", s.CreateFullGame()).Methods("POST")
 }
 
 func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
@@ -168,6 +177,43 @@ func (s *apiServer) handleEndTurn() http.HandlerFunc {
 		doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId)
 
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
+	}
+}
+
+// Endpoint imitation for tests
+func (s *apiServer) CreateFullGame() http.HandlerFunc {
+	type request struct {
+		Rows       int `json:"rows"`
+		Cols       int `json:"cols"`
+		NumPlayers int `json:"num_players"`
+		PlayerId   int `json:"player_id"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		req := &request{}
+
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		if req.PlayerId < 0 || req.PlayerId >= req.NumPlayers {
+			s.error(w, r, http.StatusUnprocessableEntity, errIncorrectPlayerId)
+			return
+		}
+
+		g, err := game.NewFullGame(req.Rows, req.Cols, req.NumPlayers)
+
+		if err != nil {
+			s.error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+
+		user := r.Context().Value(ctxKeyUser).(*User)
+		user.createGame(g, req.PlayerId)
+
+		s.respond(w, r, http.StatusCreated, g.ToMap())
+
 	}
 }
 

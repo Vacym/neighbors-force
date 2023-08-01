@@ -43,6 +43,29 @@ func NewGame(rows, cols int, numPlayers int) (*Game, error) {
 	return game, nil
 }
 
+// Creates a game with a board filled with cells. Use only in tests
+func NewFullGame(rows, cols int, numPlayers int) (*Game, error) {
+	players, err := NewPlayersSlice(numPlayers)
+	if err != nil {
+		return nil, err
+	}
+
+	board, err := NewBoard(rows, cols)
+	if err != nil {
+		return nil, err
+	}
+
+	game, err := NewGameWithBoard(board, players)
+	if err != nil {
+		return nil, err
+	}
+
+	game.placePlayers()
+	game.countPlayersCell()
+
+	return game, nil
+}
+
 // Creates a new Game with the given Board and number of players
 func NewGameWithBoard(board *Board, players []player) (*Game, error) {
 	if len(players) < 2 {

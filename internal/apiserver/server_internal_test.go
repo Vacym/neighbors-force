@@ -186,9 +186,9 @@ func TestServer_handleMakeAttack(t *testing.T) {
 			createGameRec := httptest.NewRecorder()
 			gameBuf := &bytes.Buffer{}
 			json.NewEncoder(gameBuf).Encode(createGamePayload)
-			createGameReq, _ := http.NewRequest(http.MethodPost, "/game/create", gameBuf)
+			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
 
-			s.ServeHTTP(createGameRec, createGameReq)
+			s.testRouter.ServeHTTP(createGameRec, createGameReq)
 
 			cookies := createGameRec.Result().Cookies()
 
