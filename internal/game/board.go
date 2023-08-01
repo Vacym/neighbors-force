@@ -65,7 +65,7 @@ func (b *Board) Cols() int {
 func (b *Board) calculatePower(player player) {
 	for _, row := range b.Cells {
 		for _, cell := range row {
-			if cell.Owner() == player {
+			if cell != nil && cell.Owner() == player {
 				cell.calculatePower(b)
 			}
 		}

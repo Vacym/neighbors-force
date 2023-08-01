@@ -16,8 +16,6 @@ type Coords struct {
 	Col int `json:"col"` // Column of the cell
 }
 
-type CellInterface = cell
-
 type cell interface {
 	Level() int
 	Power() int
