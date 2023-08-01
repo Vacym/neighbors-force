@@ -13,6 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var gameCreateValidPayload = map[string]int{
+	"rows":        3,
+	"cols":        3,
+	"num_players": 2,
+	"player_id":   0,
+}
+
 func TestServer_handleGameCreate(t *testing.T) {
 	s := newServer(sessions.NewCookieStore([]byte("secret")))
 
@@ -22,13 +29,8 @@ func TestServer_handleGameCreate(t *testing.T) {
 		expectedCode int
 	}{
 		{
-			name: "valid",
-			payload: map[string]int{
-				"rows":        3,
-				"cols":        3,
-				"num_players": 2,
-				"player_id":   0,
-			},
+			name:         "valid",
+			payload:      gameCreateValidPayload,
 			expectedCode: http.StatusCreated,
 		},
 		{
@@ -142,6 +144,11 @@ func TestServer_handleGameCreate(t *testing.T) {
 	}
 }
 
+var makeAttackValidPayload = map[string]game.Coords{
+	"from": {Row: 0, Col: 0},
+	"to":   {Row: 0, Col: 1},
+}
+
 func TestServer_handleMakeAttack(t *testing.T) {
 	s := newServer(sessions.NewCookieStore([]byte("secret")))
 
@@ -151,11 +158,8 @@ func TestServer_handleMakeAttack(t *testing.T) {
 		expectedCode int
 	}{
 		{
-			name: "valid",
-			payload: map[string]game.Coords{
-				"from": {Row: 0, Col: 0},
-				"to":   {Row: 0, Col: 1},
-			},
+			name:         "valid",
+			payload:      makeAttackValidPayload,
 			expectedCode: http.StatusOK,
 		},
 		{
@@ -173,20 +177,14 @@ func TestServer_handleMakeAttack(t *testing.T) {
 		},
 	}
 
-	createGamePayload := map[string]int{
-		"rows":        3,
-		"cols":        3,
-		"num_players": 2,
-		"player_id":   0,
-	}
-
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create game and save cookies
 			createGameRec := httptest.NewRecorder()
 			gameBuf := &bytes.Buffer{}
-			json.NewEncoder(gameBuf).Encode(createGamePayload)
+			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
 			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
+
 
 			s.testRouter.ServeHTTP(createGameRec, createGameReq)
 
@@ -223,4 +221,270 @@ func TestServer_handleMakeAttack(t *testing.T) {
 		s.ServeHTTP(rec, req)
 		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
 	})
+}
+
+func TestServer_handleEndAttack(t *testing.T) {
+	s := newServer(sessions.NewCookieStore([]byte("secret")))
+
+	testCases := []struct {
+		name         string
+		expectedCode int
+	}{
+		{
+			name:         "valid",
+			expectedCode: http.StatusOK,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create game and save cookies
+			createGameRec := httptest.NewRecorder()
+			gameBuf := &bytes.Buffer{}
+			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
+			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
+
+			s.ServeHTTP(createGameRec, createGameReq)
+
+			cookies := createGameRec.Result().Cookies()
+
+			require.Equal(t, http.StatusCreated, createGameRec.Code)
+
+			rec := httptest.NewRecorder()
+
+			req, _ := http.NewRequest(http.MethodPost, "/game/end_attack", nil)
+
+			// Add cookies to request
+			for _, c := range cookies {
+				req.AddCookie(c)
+			}
+
+			s.ServeHTTP(rec, req)
+			assert.Equal(t, tc.expectedCode, rec.Code)
+		})
+	}
+
+	// test without creating game
+	t.Run("game is not exist", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		req, _ := http.NewRequest(http.MethodPost, "/game/end_attack", nil)
+
+		s.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	})
+}
+
+func TestServer_handleUpgrade(t *testing.T) {
+	s := newServer(sessions.NewCookieStore([]byte("secret")))
+
+	testCases := []struct {
+		name         string
+		payload      interface{}
+		expectedCode int
+	}{
+		{
+			name: "valid",
+			payload: map[string]interface{}{
+				"cell":   game.Coords{Row: 0, Col: 0},
+				"levels": 1,
+			},
+			expectedCode: http.StatusOK,
+		},
+		{
+			name: "invalid coords",
+			payload: map[string]interface{}{
+				"cell":   game.Coords{Row: -1, Col: 0},
+				"levels": 1,
+			},
+			expectedCode: http.StatusUnprocessableEntity,
+		},
+		{
+			name:         "invalid payload",
+			payload:      "invalid",
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create game and save cookies
+			createGameRec := httptest.NewRecorder()
+			gameBuf := &bytes.Buffer{}
+			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
+			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
+
+			s.ServeHTTP(createGameRec, createGameReq)
+
+			cookies := createGameRec.Result().Cookies()
+
+			require.Equal(t, http.StatusCreated, createGameRec.Code)
+
+			// Call /game/end_attack to make the endpoint valid
+			endAttackRec := httptest.NewRecorder()
+			endAttackReq, _ := http.NewRequest(http.MethodPost, "/game/end_attack", nil)
+
+			// Add cookies to request
+			for _, c := range cookies {
+				endAttackReq.AddCookie(c)
+			}
+
+			s.ServeHTTP(endAttackRec, endAttackReq)
+			require.Equal(t, http.StatusOK, endAttackRec.Code)
+
+			rec := httptest.NewRecorder()
+
+			b := &bytes.Buffer{}
+			json.NewEncoder(b).Encode(tc.payload)
+
+			req, _ := http.NewRequest(http.MethodPost, "/game/upgrade", b)
+
+			// Add cookies to request
+			for _, c := range cookies {
+				req.AddCookie(c)
+			}
+
+			s.ServeHTTP(rec, req)
+			assert.Equal(t, tc.expectedCode, rec.Code)
+		})
+	}
+
+	// test without creating game
+	t.Run("game is not exist", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		b := &bytes.Buffer{}
+		json.NewEncoder(b).Encode(testCases[0].payload)
+
+		req, _ := http.NewRequest(http.MethodPost, "/game/upgrade", b)
+
+		s.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	})
+}
+
+func TestServer_handleEndTurn(t *testing.T) {
+	s := newServer(sessions.NewCookieStore([]byte("secret")))
+
+	testCases := []struct {
+		name         string
+		expectedCode int
+	}{
+		{
+			name:         "valid with end_attack",
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "valid without end_attack",
+			expectedCode: http.StatusOK,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create game and save cookies
+			createGameRec := httptest.NewRecorder()
+			gameBuf := &bytes.Buffer{}
+			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
+			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
+
+			s.ServeHTTP(createGameRec, createGameReq)
+
+			cookies := createGameRec.Result().Cookies()
+
+			require.Equal(t, http.StatusCreated, createGameRec.Code)
+
+			if tc.name == "valid with end_attack" {
+				// Call /game/end_attack to make the endpoint valid
+				endAttackRec := httptest.NewRecorder()
+				endAttackReq, _ := http.NewRequest(http.MethodPost, "/game/end_attack", nil)
+
+				// Add cookies to request
+				for _, c := range cookies {
+					endAttackReq.AddCookie(c)
+				}
+
+				s.ServeHTTP(endAttackRec, endAttackReq)
+				require.Equal(t, http.StatusOK, endAttackRec.Code)
+			}
+
+			rec := httptest.NewRecorder()
+
+			req, _ := http.NewRequest(http.MethodPost, "/game/end_turn", nil)
+
+			// Add cookies to request
+			for _, c := range cookies {
+				req.AddCookie(c)
+			}
+
+			s.ServeHTTP(rec, req)
+			assert.Equal(t, tc.expectedCode, rec.Code)
+		})
+	}
+
+	// test without creating game
+	t.Run("game is not exist", func(t *testing.T) {
+		rec := httptest.NewRecorder()
+
+		req, _ := http.NewRequest(http.MethodPost, "/game/end_turn", nil)
+
+		s.ServeHTTP(rec, req)
+		assert.Equal(t, http.StatusUnprocessableEntity, rec.Code)
+	})
+}
+
+func TestServer_handleGetMap(t *testing.T) {
+	s := newServer(sessions.NewCookieStore([]byte("secret")))
+
+	testCases := []struct {
+		name         string
+		expectedCode int
+	}{
+		{
+			name:         "valid with created game",
+			expectedCode: http.StatusOK,
+		},
+		{
+			name:         "invalid without created game",
+			expectedCode: http.StatusUnprocessableEntity,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if tc.name == "valid with created game" {
+				// Create game and save cookies
+				createGameRec := httptest.NewRecorder()
+				gameBuf := &bytes.Buffer{}
+				json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
+				createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
+
+				s.ServeHTTP(createGameRec, createGameReq)
+
+				cookies := createGameRec.Result().Cookies()
+
+				require.Equal(t, http.StatusCreated, createGameRec.Code)
+
+				rec := httptest.NewRecorder()
+
+				req, _ := http.NewRequest(http.MethodGet, "/game/get_map", nil)
+
+				// Add cookies to request
+				for _, c := range cookies {
+					req.AddCookie(c)
+				}
+
+				s.ServeHTTP(rec, req)
+				assert.Equal(t, tc.expectedCode, rec.Code)
+			} else {
+				// Test without creating game
+				rec := httptest.NewRecorder()
+
+				req, _ := http.NewRequest(http.MethodGet, "/game/get_map", nil)
+
+				s.ServeHTTP(rec, req)
+				assert.Equal(t, tc.expectedCode, rec.Code)
+			}
+		})
+	}
 }

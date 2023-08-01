@@ -48,3 +48,7 @@
 
 # Ignore performance profiling files
 *.pprof
+
+# Ignore terminal script files
+*.sh
+*.bat

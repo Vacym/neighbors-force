@@ -6,6 +6,7 @@ import (
 
 var (
 	errIncorrectBoardSize = errors.New("board size cannot be even or less than 3")
+	errIndexOutOfRange    = errors.New("cell index out of range")
 )
 
 /*
@@ -61,11 +62,29 @@ func (b *Board) Cols() int {
 	return b.cols
 }
 
+func (b *Board) calculatePower(player player) {
+	for _, row := range b.Cells {
+		for _, cell := range row {
+			if cell.Owner() == player {
+				cell.calculatePower(b)
+			}
+		}
+	}
+}
+
 func (b *Board) IsInsideBoard(coords Coords) bool {
 	if coords.Row < 0 || coords.Col < 0 || coords.Row >= b.rows || coords.Col >= b.cols {
 		return false
 	}
 	return true
+}
+
+func (b *Board) GetCell(coords Coords) (cell, error) {
+	if !b.IsInsideBoard(coords) {
+		return nil, errIndexOutOfRange
+	}
+
+	return b.Cells[coords.Row][coords.Col], nil
 }
 
 func (b *Board) toMap() map[string]interface{} {

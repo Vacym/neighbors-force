@@ -7,18 +7,20 @@
     <svg width="0" height="0" display="none">
         <defs>
             <g id="hexagon">
-                <polygon points=" 26,60 0,45 0,15 26,0 52,15 52,45" stroke="#808080" stroke-width="2"
+                <polygon points=" 26,60 0,45 0,15 26,0 52,15 52,45 0,15 52,45" stroke="#808080" stroke-width="2"
                     transform=" translate(1,1)" />
             </g>
         </defs>
     </svg>
-    <div id="board" unselectable="on">
+    <div id="board" class="unselectable">
         <table id="table-0">
             <tbody>
                 <td id="0" power="2" owner-id="0" class="can-attack">
-                    <div class="num" id="cell-n-0">2</div><svg>
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">2</div>
+                    <div class="num level">1</div>
                 </td>
                 <td id="1" power="0">
                     <div class="num" id="cell-n-1">0</div><svg>
@@ -66,7 +68,10 @@
             </tbody>
         </table>
     </div>
+    <div class="score-counter">Score: <span id="score">0</span></div>
+    <button type="button" id="end-attack">End Attack</button>
     <button type="button" id="end-turn">End Turn</button>
+    <button type="button" id="recover">Recover</button>
     <form id="game-form">
         <label for="rows">Rows:</label>
         <input type="number" id="rows" name="rows" value="5"><br><br>

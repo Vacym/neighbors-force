@@ -57,7 +57,11 @@ func (s *apiServer) configureRouter() {
 	s.router.Use(s.UserMiddleware)
 	s.router.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
 	s.router.HandleFunc("/game/attack", s.handleMakeAttack()).Methods("POST")
+	s.router.HandleFunc("/game/end_attack", s.handleEndAttack()).Methods("POST")
+	s.router.HandleFunc("/game/upgrade", s.handleMakeUpgrade()).Methods("POST")
 	s.router.HandleFunc("/game/end_turn", s.handleEndTurn()).Methods("POST")
+
+	s.router.HandleFunc("/game/get_map", s.handleGetMap()).Methods("GET")
 
 	// Add a test handler, which is only used in tests.
 	s.testRouter.Use(s.UserMiddleware)
@@ -163,6 +167,48 @@ func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 	}
 }
 
+func (s *apiServer) handleEndAttack() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := r.Context().Value(ctxKeyUser).(*User)
+		err := user.endAttack()
+
+		if err != nil {
+			s.error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+
+		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
+	}
+}
+
+func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
+	type request struct {
+		Cell   game.Coords `json:"cell"`
+		Levels int         `json:"levels"`
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.Body)
+		req := &request{}
+
+		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.error(w, r, http.StatusBadRequest, err)
+			return
+		}
+
+		user := r.Context().Value(ctxKeyUser).(*User)
+		err := user.makeUpgrade(req.Cell, req.Levels)
+
+		if err != nil {
+			s.error(w, r, http.StatusUnprocessableEntity, err)
+			return
+		}
+
+		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
+	}
+}
+
 func (s *apiServer) handleEndTurn() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -174,7 +220,23 @@ func (s *apiServer) handleEndTurn() http.HandlerFunc {
 			return
 		}
 
+		// bot.DoTurn(user.GameBox.Game, user.me().(*game.Player))
+
 		doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId)
+
+		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
+	}
+}
+
+func (s *apiServer) handleGetMap() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		user := r.Context().Value(ctxKeyUser).(*User)
+
+		if user.GameBox.Game == nil {
+			s.error(w, r, http.StatusUnprocessableEntity, errGameIsNotExist)
+			return
+		}
 
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
@@ -213,13 +275,13 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 		user.createGame(g, req.PlayerId)
 
 		s.respond(w, r, http.StatusCreated, g.ToMap())
-
 	}
 }
 
 func doAllBotsTurns(g *game.Game, playerId int) {
 	for g.Turn() != playerId {
 		bot.DoTurn(g, g.Players[g.Turn()].(*game.Player))
+		bot.DoUpgrade(g, g.Players[g.Turn()].(*game.Player))
 	}
 }
 

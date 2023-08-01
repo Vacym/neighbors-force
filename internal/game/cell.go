@@ -27,11 +27,14 @@ type cell interface {
 
 	attack(target cell) error
 	upgrade(points int) error
+	calculatePower(*Board)
 
 	GetNeighbors(*Board) []cell
 
 	toMap() map[string]interface{}
 }
+
+type CellInterface = cell
 
 type Cell struct {
 	coords Coords
@@ -63,6 +66,8 @@ func (c Cell) Col() int {
 func newCell(row, col int) *Cell {
 	return &Cell{
 		coords: Coords{row, col},
+		power:  1,
+		level:  1,
 	}
 }
 
@@ -103,25 +108,52 @@ func (c *Cell) attack(targetInterface cell) error {
 		return errIsNotNeighbor
 	}
 
-	attackPower := c.power - 1
+	err := target.handleAttack(c)
+	if err != nil {
+		return err
+	}
+
 	c.power = 1
-	target.power -= attackPower
 
-	if target.power < 0 {
-		if target.owner != nil {
-			target.owner.deleteCell()
+	return nil
+}
+
+func (c *Cell) handleAttack(attacker cell) error {
+	attackPower := attacker.Power()
+	c.power -= attackPower
+
+	if c.power < 0 {
+		if c.Owner() != nil {
+			c.Owner().deleteCell()
 		}
-		c.owner.addCell()
+		attacker.Owner().addCell()
 
-		target.power = -target.power
-		target.owner = c.owner
+		c.power = -c.power
+		c.owner = attacker.Owner()
+		c.level = 1
 	}
 
 	return nil
 }
 
-func (c *Cell) upgrade(points int) error {
-	c.level += points
+func (c *Cell) calculatePower(board *Board) {
+	if c.owner == nil {
+		return
+	}
+
+	newPower := 1
+
+	for _, cell := range c.GetNeighbors(board) {
+		if cell.Owner() == c.Owner() {
+			newPower += cell.Level() - 1
+		}
+	}
+
+	c.power = newPower
+}
+
+func (c *Cell) upgrade(levels int) error {
+	c.level += levels
 
 	return nil
 }

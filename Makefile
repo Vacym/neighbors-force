@@ -1,14 +1,14 @@
 .PHONY: build run test coverage
 
-BINARY_NAME=apiserver.exe
+BINARY_NAME=proxyserver.exe
 BUILD_DIR=build
 COVERAGE_FILE=coverage.out
 
 build:
-	go build -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/apiserver
+	go build -o $(BUILD_DIR)/$(BINARY_NAME) ./cmd/proxyserver
 
 run:
-	go run ./cmd/apiserver/main.go
+	go run ./cmd/proxyserver/main.go
 
 test:
 	go test -v ./...
