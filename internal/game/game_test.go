@@ -109,7 +109,7 @@ func TestGame_NewGame(t *testing.T) {
 
 	for _, tc := range testCasesNewGame {
 		t.Run(tc.name, func(t *testing.T) {
-			game, err := game.NewGame(tc.rows, tc.cols, tc.players)
+			game, err := game.NewGame(tc.rows, tc.cols, tc.players, 0)
 
 			if !tc.isValid {
 				assert.Error(t, err)

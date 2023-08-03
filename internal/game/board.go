@@ -1,21 +1,23 @@
 package game
 
-import "errors"
+import (
+	"errors"
+)
 
 var (
-	errIncorrectBoardSize = errors.New("board size cannot be less then 2")
+	errIncorrectBoardSize = errors.New("board size cannot be even or less than 3")
 	errIndexOutOfRange    = errors.New("cell index out of range")
 )
 
 /*
-In every board even row lefter of the odd
+In every board even row shorter of the odd
 
 for example NewBoard(5, 6)
 
 ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
- ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
+ ⬢ ⬢ ⬢ ⬢ ⬢
 ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
- ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
+ ⬢ ⬢ ⬢ ⬢ ⬢
 ⬢ ⬢ ⬢ ⬢ ⬢ ⬢
 */
 
@@ -34,7 +36,7 @@ func NewBoard(rows, cols int) (*Board, error) {
 	cells := make([][]cell, rows)
 
 	for i := range cells {
-		cells[i] = make([]cell, cols)
+		cells[i] = make([]cell, cols-i%2)
 
 		for j := range cells[i] {
 			cells[i][j] = newCell(i, j)
@@ -50,13 +52,6 @@ func NewBoard(rows, cols int) (*Board, error) {
 	return board, nil
 }
 
-func NewRandomBoard(rows, cols int) (*Board, error) {
-	// PLUG
-	// TODO: make generation random board
-
-	return NewBoard(rows, cols)
-}
-
 // Returns num of rows of the hexagonal board
 func (b *Board) Rows() int {
 	return b.rows
@@ -70,7 +65,7 @@ func (b *Board) Cols() int {
 func (b *Board) calculatePower(player player) {
 	for _, row := range b.Cells {
 		for _, cell := range row {
-			if cell.Owner() == player {
+			if cell != nil && cell.Owner() == player {
 				cell.calculatePower(b)
 			}
 		}
@@ -105,8 +100,11 @@ func toCellInterfaceSlice(cells [][]cell) [][]interface{} {
 	for i, row := range cells {
 		result[i] = make([]interface{}, len(row))
 		for j, c := range row {
-
-			result[i][j] = c.toMap()
+			if c == nil {
+				result[i][j] = nil
+			} else {
+				result[i][j] = c.toMap()
+			}
 		}
 	}
 	return result

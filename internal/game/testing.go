@@ -1,7 +1,7 @@
 package game
 
 func TestGame() *Game {
-	game, _ := NewGame(5, 5, 2)
+	game, _ := NewGame(5, 5, 2, 0)
 	return game
 }
 

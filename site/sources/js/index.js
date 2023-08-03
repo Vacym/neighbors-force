@@ -106,28 +106,30 @@ function renderNewBoard(board) {
             const cell = board.cells[row][col];
             const td = document.createElement("td");
             td.id = row * board.cols + col;
-            td.setAttribute("power", cell.power);
-            if (cell.owner_id >= 0) {
-                td.setAttribute("owner-id", cell.owner_id);
+            if (cell != undefined) {
+                td.setAttribute("power", cell.power);
+                if (cell.owner_id >= 0) {
+                    td.setAttribute("owner-id", cell.owner_id);
+                }
+
+                const divPower = document.createElement("div");
+                divPower.classList.add("num", "power");
+                divPower.innerText = cell.power;
+
+                const divLevel = document.createElement("div");
+                divLevel.classList.add("num", "level");
+                divLevel.innerText = cell.level;
+
+                const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+
+                const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
+                use.setAttribute("href", "#hexagon");
+                svg.appendChild(use);
+            
+                td.appendChild(svg);
+                td.appendChild(divPower);
+                td.appendChild(divLevel);
             }
-
-            const divPower = document.createElement("div");
-            divPower.classList.add("num", "power");
-            divPower.innerText = cell.power;
-
-            const divLevel = document.createElement("div");
-            divLevel.classList.add("num", "level");
-            divLevel.innerText = cell.level;
-
-            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-
-            const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
-            use.setAttribute("href", "#hexagon");
-            svg.appendChild(use);
-
-            td.appendChild(svg);
-            td.appendChild(divPower);
-            td.appendChild(divLevel);
             tbody.appendChild(td);
         }
         boardElement.appendChild(table);
