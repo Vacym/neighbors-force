@@ -63,7 +63,7 @@ func TestBoardInputData_NewRandomBoard(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			board, err := game.NewRandomBoard(tc.rows, tc.cols)
+			board, err := game.NewRandomBoard(tc.rows, tc.cols, 0)
 
 			if !tc.isValid {
 				assert.Error(t, err)
@@ -107,7 +107,7 @@ func TestBoardIntegrity_NewRandomBoard(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			for attempt := 0; attempt < repeats; attempt++ {
-				board, err := game.NewRandomBoard(tc.rows, tc.cols)
+				board, err := game.NewRandomBoard(tc.rows, tc.cols, 0)
 
 				require.NoError(t, err)
 				require.NotNil(t, board)

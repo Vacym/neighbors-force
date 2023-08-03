@@ -120,7 +120,7 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 			return
 		}
 
-		g, err := game.NewGame(req.Rows, req.Cols, req.NumPlayers)
+		g, err := game.NewGame(req.Rows, req.Cols, req.NumPlayers, 0)
 
 		if err != nil {
 			s.error(w, r, http.StatusUnprocessableEntity, err)

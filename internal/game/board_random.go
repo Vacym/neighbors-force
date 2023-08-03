@@ -5,14 +5,69 @@ import (
 	"time"
 )
 
-type borders struct {
-	right, left, top, bottom bool
+type randomMapGenerator struct {
+	right, left, top, bottom int
+	boardRow, boardCol       int
+	currentCells             int
+	cells                    [][]cell
+	r                        *rand.Rand
 }
 
-func NewRandomBoard(rows, cols int) (*Board, error) {
+// addCell adds a new cell at the given row and column.
+func (g *randomMapGenerator) addCell(row, col int) {
+	g.cells[row][col] = newCell(row, col)
+	g.currentCells++
+
+	if row == 0 {
+		g.top++
+	}
+	if row == g.boardRow-1 {
+		g.bottom++
+	}
+	if col == 0 {
+		g.left++
+	}
+	if col == g.boardCol-1-row%2 {
+		g.right++
+	}
+}
+
+// timeToStop checks if the map generation should stop based on the current state.
+func (g *randomMapGenerator) timeToStop() bool {
+	return g.left >= 3 && g.top >= 3 && g.right >= 3 && g.bottom >= 3
+}
+
+// generateHexMap generates the hexagonal map using randomized recursive DFS.
+func (g *randomMapGenerator) generateHexMap(row, col int) {
+	if !g.isValid(row, col) || g.timeToStop() {
+		return
+	}
+
+	g.addCell(row, col)
+	neighbors := getNeighborCoords(row, col, g.boardRow, g.boardCol)
+	g.r.Shuffle(len(neighbors), func(i, j int) {
+		neighbors[i], neighbors[j] = neighbors[j], neighbors[i]
+	})
+	for _, neighbor := range neighbors {
+		g.generateHexMap(neighbor.Row, neighbor.Col)
+	}
+}
+
+// isValid checks if the current cell is within bounds and not already visited.
+func (g *randomMapGenerator) isValid(row, col int) bool {
+	return row >= 0 && row < g.boardRow && col >= 0 && col < g.boardCol && g.cells[row][col] == nil
+}
+
+// NewRandomBoard generates a random hexagonal game board with the given number of rows and columns.
+func NewRandomBoard(rows, cols int, seed int64) (*Board, error) {
 	if rows < 3 || cols < 3 || rows%2 == 0 || cols%2 == 0 {
 		return nil, errIncorrectBoardSize
 	}
+
+	if seed == 0 {
+		seed = time.Now().UnixNano()
+	}
+	r := rand.New(rand.NewSource(seed))
 
 	// We'll generate only a quarter of the field, then reflect it back
 	halfRows := rows/2 + rows%2
@@ -24,14 +79,17 @@ func NewRandomBoard(rows, cols int) (*Board, error) {
 		cells[i] = make([]cell, halfCols-i%2, cols)
 	}
 
-	rand.Seed(time.Now().UnixNano())
-	startRow := rand.Intn(halfRows)
-	startCol := rand.Intn(halfCols - startRow%2)
-
-	var newBorders borders
+	startRow := r.Intn(halfRows)
+	startCol := r.Intn(halfCols - startRow%2)
 
 	// Generate the hex map
-	generateHexMap(startRow, startCol, halfRows, halfCols, cells, &newBorders)
+	generator := &randomMapGenerator{
+		boardRow: halfRows,
+		boardCol: halfCols,
+		cells:    cells,
+		r:        r,
+	}
+	generator.generateHexMap(startRow, startCol)
 
 	// Reflect the map vertically
 	for i := 0; i < halfRows; i++ {
@@ -62,49 +120,4 @@ func NewRandomBoard(rows, cols int) (*Board, error) {
 	}
 
 	return board, nil
-}
-
-func generateHexMap(row, col, boardRow, boardCol int, cells [][]cell, borders *borders) {
-	// Check if the current cell is within bounds and not already visited
-	if !isValid(row, col, boardRow, boardCol, cells) {
-		return
-	}
-	if borders.left && borders.right && borders.bottom && borders.top {
-		return
-	}
-
-	if row == 0 {
-		borders.top = true
-	}
-	if row == boardRow-1 {
-		borders.bottom = true
-	}
-	if col == 0 {
-		borders.left = true
-	}
-	if col == boardCol-1-row%2 {
-		borders.right = true
-	}
-
-	// Mark the current cell as visited or perform any other required operations
-	cells[row][col] = newCell(row, col)
-
-	// Get the neighbors of the current cell
-	neighbors := getNeighborCoords(row, col, boardRow, boardCol)
-
-	// Shuffle the order of the neighbors randomly
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(neighbors), func(i, j int) {
-		neighbors[i], neighbors[j] = neighbors[j], neighbors[i]
-	})
-
-	// Explore the neighbors recursively
-	for _, neighbor := range neighbors {
-		generateHexMap(neighbor.Row, neighbor.Col, boardRow, boardCol, cells, borders)
-	}
-}
-
-func isValid(row, col, boardRow, boardCol int, cells [][]cell) bool {
-	// Check if the current cell is within bounds and not already visited
-	return row >= 0 && row < boardRow && col >= 0 && col < boardCol && cells[row][col] == nil
 }

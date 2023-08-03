@@ -185,8 +185,7 @@ func TestServer_handleMakeAttack(t *testing.T) {
 			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
 			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
 
-
-			s.testRouter.ServeHTTP(createGameRec, createGameReq)
+			s.ServeTestHTTP(createGameRec, createGameReq)
 
 			cookies := createGameRec.Result().Cookies()
 
@@ -244,7 +243,7 @@ func TestServer_handleEndAttack(t *testing.T) {
 			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
 			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
 
-			s.ServeHTTP(createGameRec, createGameReq)
+			s.ServeTestHTTP(createGameRec, createGameReq)
 
 			cookies := createGameRec.Result().Cookies()
 
@@ -314,7 +313,7 @@ func TestServer_handleUpgrade(t *testing.T) {
 			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
 			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
 
-			s.ServeHTTP(createGameRec, createGameReq)
+			s.ServeTestHTTP(createGameRec, createGameReq)
 
 			cookies := createGameRec.Result().Cookies()
 
@@ -388,7 +387,7 @@ func TestServer_handleEndTurn(t *testing.T) {
 			json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
 			createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
 
-			s.ServeHTTP(createGameRec, createGameReq)
+			s.ServeTestHTTP(createGameRec, createGameReq)
 
 			cookies := createGameRec.Result().Cookies()
 
@@ -459,7 +458,7 @@ func TestServer_handleGetMap(t *testing.T) {
 				json.NewEncoder(gameBuf).Encode(gameCreateValidPayload)
 				createGameReq, _ := http.NewRequest(http.MethodPost, "/test/create_full", gameBuf)
 
-				s.ServeHTTP(createGameRec, createGameReq)
+				s.ServeTestHTTP(createGameRec, createGameReq)
 
 				cookies := createGameRec.Result().Cookies()
 
