@@ -7,7 +7,7 @@
     <svg width="0" height="0" display="none">
         <defs>
             <g id="hexagon">
-                <polygon points=" 26,60 0,45 0,15 26,0 52,15 52,45 0,15 52,45" stroke="#808080" stroke-width="2"
+                <polygon points=" 26,60 0,45 0,15 26,0 52,15 52,45 0,15 52,45" stroke-width="2"
                     transform=" translate(1,1)" />
             </g>
         </defs>
@@ -22,62 +22,76 @@
                     <div class="num power">2</div>
                     <div class="num level">1</div>
                 </td>
-                <td id="1" power="0">
-                    <div class="num" id="cell-n-1">0</div><svg>
+                <td id="1" power="1">
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">1</div>
+                    <div class="num level">1</div>
                 </td>
                 <td id="2" power="2" owner-id="1">
-                    <div class="num" id="cell-n-2">2</div><svg>
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">2</div>
+                    <div class="num level">1</div>
                 </td>
             </tbody>
         </table>
         <table id="table-1">
             <tbody>
                 <td id="3" power="1" owner-id="2">
-                    <div class="num" id="cell-n-3">1</div><svg>
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">1</div>
+                    <div class="num level">2</div>
                 </td>
                 <td id="4" power="2" owner-id="2">
-                    <div class="num" id="cell-n-4">2</div><svg>
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">2</div>
+                    <div class="num level">1</div>
                 </td>
             </tbody>
         </table>
         <table id="table-2">
             <tbody>
                 <td id="6" power="3" owner-id="2">
-                    <div class="num" id="cell-n-6">3</div><svg>
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">3</div>
+                    <div class="num level">1</div>
                 </td>
-                <td id="7" power="0">
-                    <div class="num" id="cell-n-7">0</div><svg>
+                <td id="7" power="1">
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">1</div>
+                    <div class="num level">1</div>
                 </td>
                 <td id="8" power="2" owner-id="3">
-                    <div class="num" id="cell-n-8">2</div><svg>
+                    <svg>
                         <use href="#hexagon"></use>
                     </svg>
+                    <div class="num power">2</div>
+                    <div class="num level">1</div>
                 </td>
             </tbody>
         </table>
     </div>
-    <div class="score-counter">Score: <span id="score">0</span></div>
+    <div class="score-counter">Scores: <span id="scores">0</span></div>
+    <div id="error">test</div>
     <button type="button" id="end-attack">End Attack</button>
     <button type="button" id="end-turn">End Turn</button>
-    <button type="button" id="recover">Recover</button>
     <form id="game-form">
         <label for="rows">Rows:</label>
-        <input type="number" id="rows" name="rows" value="5"><br><br>
+        <input type="number" id="rows" name="rows" value="9"><br><br>
 
         <label for="cols">Cols:</label>
-        <input type="number" id="cols" name="cols" value="5"><br><br>
+        <input type="number" id="cols" name="cols" value="9"><br><br>
 
         <label for="num_players">Num Players:</label>
         <input type="number" id="num_players" name="num_players" value="2"><br><br>

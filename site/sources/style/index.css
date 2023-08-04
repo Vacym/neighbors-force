@@ -26,6 +26,10 @@ svg {
     height: 62px;
 }
 
+use {
+    stroke: #808080
+}
+
 table:nth-child(2n) {
     margin-left: 28px;
 }
@@ -51,25 +55,45 @@ td:not([owner-id]) use {
     fill: #BFBFBF
 }
 
+.can-attack:hover use,
+.can-be-attacked:hover use,
+.can-upgrade:hover use{
+    cursor: pointer;
+    fill: #ddd;
+}
 
-.can-attack[owner-id="0"] .num:hover ~ svg use {
+.can-attack[owner-id="0"]:hover use,
+.can-be-attacked[owner-id="0"]:hover use,
+.can-upgrade[owner-id="0"]:hover use {
     fill: #4DD2FF;
 }
 
-.can-attack[owner-id="1"] .num:hover ~ svg use {
+
+.can-attack[owner-id="1"]:hover use,
+.can-be-attacked[owner-id="1"]:hover use,
+.can-upgrade[owner-id="1"]:hover use {
     fill: #BCF568;
 }
 
-.can-attack[owner-id="2"] .num:hover ~ svg use {
+.can-attack[owner-id="2"]:hover use,
+.can-be-attacked[owner-id="2"]:hover use,
+.can-upgrade[owner-id="2"]:hover use {
     fill: #FFC04D;
 }
 
-.can-attack[owner-id="3"] .num:hover ~ svg use {
+.can-attack[owner-id="3"]:hover use,
+.can-be-attacked[owner-id="3"]:hover use,
+.can-upgrade[owner-id="3"]:hover use {
     fill: #FFB5DA;
 }
 
 #board {
+    width: max-content;
     cursor: default;
+}
+
+.attacking use {
+    stroke: #e76767;
 }
 
 .can-attack .num {
@@ -123,9 +147,6 @@ svg {
 
 
 .score-counter {
-    position: absolute;
-    top: 10px;
-    right: 10px;
     color: white;
-    font-size: 18px;
+    font-size: 20px;
   }

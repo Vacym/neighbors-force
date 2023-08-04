@@ -287,7 +287,7 @@ func doAllBotsTurns(g *game.Game, playerId int) {
 
 func (s *apiServer) error(w http.ResponseWriter, r *http.Request, code int, err error) {
 	s.respond(w, r, code, map[string]string{
-		"error:": err.Error(),
+		"error": err.Error(),
 	})
 }
 
