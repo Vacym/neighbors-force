@@ -51,7 +51,7 @@ function endTurn() {
 }
 
 
-async function recover() {
+async function recover(error) {
     try {
         const data = await fetchMap();
         if (data.players[data.turn].attacking === true) {
@@ -59,6 +59,7 @@ async function recover() {
         } else {
             startUpgrade(data);
         }
+        if (error) renderError(error)
     } catch (error) {
         console.error('Error while restoring the game:', error);
     }
@@ -69,6 +70,12 @@ function startNewGame(data) {
     const board = data.board;
     const players = data.players;
     const turn = data.turn
+
+    renderError(data.error)
+    if (data.error) {
+        recover(data.error)
+        return
+    }
 
     boardElement = renderNewBoard(board)
     renderScores(players[turn].points)
@@ -82,14 +89,29 @@ function startUpgrade(data) {
     const players = data.players;
     const turn = data.turn
 
+    renderError(data.error)
+    if (data.error) {
+        recover(data.error)
+        return
+    }
+
     boardElement = renderNewBoard(board)
     renderScores(players[turn].points)
     markCanUpgrade(boardElement, turn)
     addUpgradeClickHandlers(boardElement)
 }
 
+function renderError(error) {
+    errorDiv = document.getElementById('error');
+    if (error) {
+        errorDiv.textContent = error
+    } else {
+        errorDiv.textContent = "there is will be error"
+    }
+}
+
 function renderScores(scores) {
-    const scoreElement = document.getElementById('score');
+    const scoreElement = document.getElementById('scores');
     scoreElement.textContent = scores;
 }
 
@@ -125,7 +147,7 @@ function renderNewBoard(board) {
                 const use = document.createElementNS("http://www.w3.org/2000/svg", "use");
                 use.setAttribute("href", "#hexagon");
                 svg.appendChild(use);
-            
+
                 td.appendChild(svg);
                 td.appendChild(divPower);
                 td.appendChild(divLevel);
@@ -176,6 +198,7 @@ function addCanBeAttackedClickHandlers(boardElement, event) {
     console.log("attackCellCoords", attackCellCoords)
     console.log('click attack!');
 
+    markAttacking(boardElement, event.currentTarget)
     markCanBeAttacked(boardElement, this)
 
     tables.forEach(table => {
@@ -241,6 +264,17 @@ function unmarkCanBeAttacked(boardElement, attackTd) {
     })
 }
 
+function markAttacking(boardElement, newAttacking) {
+    if (attacking) {
+        let lastAttacking = document.getElementById(attacking.id)
+        lastAttacking.classList.remove('attacking')
+    }
+
+    attacking = newAttacking
+    attacking.classList.add('attacking')
+}
+
+
 function markCanUpgrade(boardElement, turn) {
     const tables = boardElement.getElementsByTagName('table');
     for (let i = 0; i < tables.length; i++) {
@@ -285,6 +319,7 @@ function determineCoords(id, rows, cols) {
 }
 
 var game
+var attacking
 
 function main() {
     const form = document.querySelector('#game-form');
@@ -302,9 +337,19 @@ function main() {
     endAttackButton.onclick = endAttack
     const endTurnButton = document.querySelector('#end-turn');
     endTurnButton.onclick = endTurn
-    const recoverButton = document.querySelector('#recover');
-    recoverButton.onclick = recover
+
+    // Process keyboard events
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'N' || event.key === 'n') {
+            form.dispatchEvent(new Event('submit'));
+        } else if (event.key === 'Z' || event.key === 'z') {
+            endAttackButton.click();
+        } else if (event.key === 'X' || event.key === 'x') {
+            endTurnButton.click();
+        }
+    });
 }
 
 document.addEventListener('DOMContentLoaded', main);
+
 
