@@ -6,11 +6,42 @@ import (
 )
 
 type randomMapGenerator struct {
-	right, left, top, bottom int
-	boardRow, boardCol       int
-	currentCells             int
-	cells                    [][]cell
-	r                        *rand.Rand
+	right, left, top, bottom             int
+	minRight, minLeft, minTop, minBottom int
+	boardRow, boardCol                   int
+	currentCells                         int
+	cells                                [][]cell
+	r                                    *rand.Rand
+}
+
+// NewRandomMapGenerator creates a new instance of randomMapGenerator.
+// Values can be provided for minRight, minBottom, minLeft, and minTop.
+// If the values are not provided, the default value of 1 will be used for all of them.
+func NewRandomMapGenerator(boardRow, boardCol int, cells [][]cell, r *rand.Rand, mins ...int) *randomMapGenerator {
+	minRight, minBottom, minLeft, minTop := 1, 1, 1, 1
+	if len(mins) > 0 {
+		minRight = mins[0]
+	}
+	if len(mins) > 1 {
+		minBottom = mins[1]
+	}
+	if len(mins) > 2 {
+		minLeft = mins[2]
+	}
+	if len(mins) > 3 {
+		minTop = mins[3]
+	}
+
+	return &randomMapGenerator{
+		minRight:  minRight,
+		minLeft:   minLeft,
+		minTop:    minTop,
+		minBottom: minBottom,
+		boardRow:  boardRow,
+		boardCol:  boardCol,
+		cells:     cells,
+		r:         r,
+	}
 }
 
 // addCell adds a new cell at the given row and column.
@@ -34,7 +65,10 @@ func (g *randomMapGenerator) addCell(row, col int) {
 
 // timeToStop checks if the map generation should stop based on the current state.
 func (g *randomMapGenerator) timeToStop() bool {
-	return g.left >= 3 && g.top >= 3 && g.right >= 3 && g.bottom >= 3
+	return g.left >= g.minLeft &&
+		g.top >= g.minTop &&
+		g.right >= g.minRight &&
+		g.bottom >= g.minBottom
 }
 
 // generateHexMap generates the hexagonal map using randomized recursive DFS.
@@ -70,8 +104,8 @@ func NewRandomBoard(rows, cols int, seed int64) (*Board, error) {
 	r := rand.New(rand.NewSource(seed))
 
 	// We'll generate only a quarter of the field, then reflect it back
-	halfRows := rows/2 + rows%2
-	halfCols := cols/2 + cols%2
+	halfRows := rows/2 + 1
+	halfCols := cols/2 + 1
 
 	cells := make([][]cell, halfRows, rows)
 
@@ -83,12 +117,13 @@ func NewRandomBoard(rows, cols int, seed int64) (*Board, error) {
 	startCol := r.Intn(halfCols - startRow%2)
 
 	// Generate the hex map
-	generator := &randomMapGenerator{
-		boardRow: halfRows,
-		boardCol: halfCols,
-		cells:    cells,
-		r:        r,
-	}
+	generator := NewRandomMapGenerator(
+		halfRows, halfCols,
+		cells, r,
+		max(2, rows/5),
+		max(2, rows/5),
+		2, 2,
+	)
 	generator.generateHexMap(startRow, startCol)
 
 	// Reflect the map vertically
