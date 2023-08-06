@@ -2,6 +2,7 @@ package game
 
 import (
 	"math/rand"
+	"sort"
 	"time"
 )
 
@@ -11,6 +12,7 @@ type randomMapGenerator struct {
 	boardRow, boardCol                   int
 	currentCells                         int
 	cells                                [][]cell
+	neighbors                            [][]int
 	r                                    *rand.Rand
 }
 
@@ -32,6 +34,11 @@ func NewRandomMapGenerator(boardRow, boardCol int, cells [][]cell, r *rand.Rand,
 		minTop = mins[3]
 	}
 
+	neighbors := make([][]int, boardRow)
+	for i := range neighbors {
+		neighbors[i] = make([]int, boardCol)
+	}
+
 	return &randomMapGenerator{
 		minRight:  minRight,
 		minLeft:   minLeft,
@@ -40,12 +47,13 @@ func NewRandomMapGenerator(boardRow, boardCol int, cells [][]cell, r *rand.Rand,
 		boardRow:  boardRow,
 		boardCol:  boardCol,
 		cells:     cells,
+		neighbors: neighbors,
 		r:         r,
 	}
 }
 
 // addCell adds a new cell at the given row and column.
-func (g *randomMapGenerator) addCell(row, col int) {
+func (g *randomMapGenerator) addCell(row, col int) cell {
 	g.cells[row][col] = newCell(row, col)
 	g.currentCells++
 
@@ -61,6 +69,12 @@ func (g *randomMapGenerator) addCell(row, col int) {
 	if col == g.boardCol-1-row%2 {
 		g.right++
 	}
+
+	for _, coord := range getNeighborCoords(row, col, g.boardRow, g.boardCol) {
+		g.neighbors[coord.Row][coord.Col]++
+	}
+
+	return g.cells[row][col]
 }
 
 // timeToStop checks if the map generation should stop based on the current state.
@@ -71,6 +85,20 @@ func (g *randomMapGenerator) timeToStop() bool {
 		g.bottom >= g.minBottom
 }
 
+// shuffleCoords shuffle slice of coords
+func (g *randomMapGenerator) shuffleCoords(coords []Coords) {
+	g.r.Shuffle(len(coords), func(i, j int) {
+		coords[i], coords[j] = coords[j], coords[i]
+	})
+
+	limit := 2
+	sort.Slice(coords, func(i, j int) bool {
+		return min(limit, g.neighbors[coords[i].Row][coords[i].Col]) >
+			min(limit, g.neighbors[coords[j].Row][coords[j].Col])
+	})
+
+}
+
 // generateHexMap generates the hexagonal map using randomized recursive DFS.
 func (g *randomMapGenerator) generateHexMap(row, col int) {
 	if !g.isValid(row, col) || g.timeToStop() {
@@ -79,9 +107,8 @@ func (g *randomMapGenerator) generateHexMap(row, col int) {
 
 	g.addCell(row, col)
 	neighbors := getNeighborCoords(row, col, g.boardRow, g.boardCol)
-	g.r.Shuffle(len(neighbors), func(i, j int) {
-		neighbors[i], neighbors[j] = neighbors[j], neighbors[i]
-	})
+	g.shuffleCoords(neighbors)
+
 	for _, neighbor := range neighbors {
 		g.generateHexMap(neighbor.Row, neighbor.Col)
 	}
