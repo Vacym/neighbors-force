@@ -87,16 +87,22 @@ func (g *randomMapGenerator) timeToStop() bool {
 
 // shuffleCoords shuffle slice of coords
 func (g *randomMapGenerator) shuffleCoords(coords []Coords) {
-	g.r.Shuffle(len(coords), func(i, j int) {
-		coords[i], coords[j] = coords[j], coords[i]
-	})
-
 	limit := 2
+	swapDifferentNeighborsProbability := 0.3
+
 	sort.Slice(coords, func(i, j int) bool {
 		return min(limit, g.neighbors[coords[i].Row][coords[i].Col]) >
 			min(limit, g.neighbors[coords[j].Row][coords[j].Col])
 	})
 
+	g.r.Shuffle(len(coords), func(i, j int) {
+		neighborsI := min(limit, g.neighbors[coords[i].Row][coords[i].Col])
+		neighborsJ := min(limit, g.neighbors[coords[j].Row][coords[j].Col])
+
+		if neighborsI == neighborsJ || g.r.Float64() <= swapDifferentNeighborsProbability {
+			coords[i], coords[j] = coords[j], coords[i]
+		}
+	})
 }
 
 // generateHexMap generates the hexagonal map using randomized recursive DFS.
