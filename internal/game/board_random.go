@@ -11,6 +11,8 @@ type randomMapGenerator struct {
 	minRight, minLeft, minTop, minBottom int
 	boardRow, boardCol                   int
 	currentCells                         int
+	maxNeighborCount                     int
+	swapProbability                      float64
 	cells                                [][]cell
 	neighbors                            [][]int
 	r                                    *rand.Rand
@@ -40,15 +42,17 @@ func NewRandomMapGenerator(boardRow, boardCol int, cells [][]cell, r *rand.Rand,
 	}
 
 	return &randomMapGenerator{
-		minRight:  minRight,
-		minLeft:   minLeft,
-		minTop:    minTop,
-		minBottom: minBottom,
-		boardRow:  boardRow,
-		boardCol:  boardCol,
-		cells:     cells,
-		neighbors: neighbors,
-		r:         r,
+		minRight:         minRight,
+		minLeft:          minLeft,
+		minTop:           minTop,
+		minBottom:        minBottom,
+		boardRow:         boardRow,
+		boardCol:         boardCol,
+		maxNeighborCount: 2,
+		swapProbability:  0.3,
+		cells:            cells,
+		neighbors:        neighbors,
+		r:                r,
 	}
 }
 
@@ -71,7 +75,9 @@ func (g *randomMapGenerator) addCell(row, col int) cell {
 	}
 
 	for _, coord := range getNeighborCoords(row, col, g.boardRow, g.boardCol) {
-		g.neighbors[coord.Row][coord.Col]++
+		if g.neighbors[coord.Row][coord.Col] < g.maxNeighborCount {
+			g.neighbors[coord.Row][coord.Col]++
+		}
 	}
 
 	return g.cells[row][col]
@@ -87,19 +93,17 @@ func (g *randomMapGenerator) timeToStop() bool {
 
 // shuffleCoords shuffle slice of coords
 func (g *randomMapGenerator) shuffleCoords(coords []Coords) {
-	limit := 2
-	swapDifferentNeighborsProbability := 0.3
 
 	sort.Slice(coords, func(i, j int) bool {
-		return min(limit, g.neighbors[coords[i].Row][coords[i].Col]) >
-			min(limit, g.neighbors[coords[j].Row][coords[j].Col])
+		return g.neighbors[coords[i].Row][coords[i].Col] >
+			g.neighbors[coords[j].Row][coords[j].Col]
 	})
 
 	g.r.Shuffle(len(coords), func(i, j int) {
-		neighborsI := min(limit, g.neighbors[coords[i].Row][coords[i].Col])
-		neighborsJ := min(limit, g.neighbors[coords[j].Row][coords[j].Col])
+		neighborsI := g.neighbors[coords[i].Row][coords[i].Col]
+		neighborsJ := g.neighbors[coords[j].Row][coords[j].Col]
 
-		if neighborsI == neighborsJ || g.r.Float64() <= swapDifferentNeighborsProbability {
+		if neighborsI == neighborsJ || g.r.Float64() <= g.swapProbability {
 			coords[i], coords[j] = coords[j], coords[i]
 		}
 	})
