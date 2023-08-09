@@ -19,40 +19,74 @@ type randomMapGenerator struct {
 }
 
 // NewRandomMapGenerator creates a new instance of randomMapGenerator.
-// Values can be provided for minRight, minBottom, minLeft, and minTop.
-// If the values are not provided, the default value of 1 will be used for all of them.
-func NewRandomMapGenerator(boardRow, boardCol int, cells [][]cell, r *rand.Rand, mins ...int) *randomMapGenerator {
-	minRight, minBottom, minLeft, minTop := 1, 1, 1, 1
-	if len(mins) > 0 {
-		minRight = mins[0]
-	}
-	if len(mins) > 1 {
-		minBottom = mins[1]
-	}
-	if len(mins) > 2 {
-		minLeft = mins[2]
-	}
-	if len(mins) > 3 {
-		minTop = mins[3]
-	}
-
-	neighbors := make([][]int, boardRow)
-	for i := range neighbors {
-		neighbors[i] = make([]int, boardCol)
-	}
-
-	return &randomMapGenerator{
-		minRight:         minRight,
-		minLeft:          minLeft,
-		minTop:           minTop,
-		minBottom:        minBottom,
+// This function allows customization of the generator's behavior using functional options.
+// If values for minRight, minBottom, minLeft, and minTop are not provided,
+// the default value of 1 will be used for all of them.
+func NewRandomMapGenerator(boardRow, boardCol int, cells [][]cell, r *rand.Rand, options ...func(*randomMapGenerator)) *randomMapGenerator {
+	gen := &randomMapGenerator{
+		minRight:         1,
+		minLeft:          1,
+		minTop:           1,
+		minBottom:        1,
 		boardRow:         boardRow,
 		boardCol:         boardCol,
 		maxNeighborCount: 2,
 		swapProbability:  0.3,
 		cells:            cells,
-		neighbors:        neighbors,
+		neighbors:        make([][]int, boardRow),
 		r:                r,
+	}
+
+	for _, option := range options {
+		option(gen)
+	}
+
+	for i := range gen.neighbors {
+		gen.neighbors[i] = make([]int, gen.boardCol)
+	}
+
+	return gen
+}
+
+// WithMinRight sets the minimum right value.
+func WithMinRight(minRight int) func(*randomMapGenerator) {
+	return func(r *randomMapGenerator) {
+		r.minRight = minRight
+	}
+}
+
+// WithMinBottom sets the minimum bottom value.
+func WithMinBottom(minBottom int) func(*randomMapGenerator) {
+	return func(r *randomMapGenerator) {
+		r.minBottom = minBottom
+	}
+}
+
+// WithMinLeft sets the minimum left value.
+func WithMinLeft(minLeft int) func(*randomMapGenerator) {
+	return func(r *randomMapGenerator) {
+		r.minLeft = minLeft
+	}
+}
+
+// WithMinTop sets the minimum top value.
+func WithMinTop(minTop int) func(*randomMapGenerator) {
+	return func(r *randomMapGenerator) {
+		r.minTop = minTop
+	}
+}
+
+// WithMaxNeighborCount sets the maximum neighbor count.
+func WithMaxNeighborCount(maxNeighborCount int) func(*randomMapGenerator) {
+	return func(r *randomMapGenerator) {
+		r.maxNeighborCount = maxNeighborCount
+	}
+}
+
+// WithSwapProbability sets the swap probability.
+func WithSwapProbability(swapProbability float64) func(*randomMapGenerator) {
+	return func(r *randomMapGenerator) {
+		r.swapProbability = swapProbability
 	}
 }
 
@@ -157,9 +191,10 @@ func NewRandomBoard(rows, cols int, seed int64) (*Board, error) {
 	generator := NewRandomMapGenerator(
 		halfRows, halfCols,
 		cells, r,
-		max(2, rows/5),
-		max(2, rows/5),
-		2, 2,
+		WithMinRight(max(2, rows/5)),
+		WithMinBottom(max(2, rows/5)),
+		WithMinLeft(2),
+		WithMinTop(2),
 	)
 	generator.generateHexMap(startRow, startCol)
 
