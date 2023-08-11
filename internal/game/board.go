@@ -24,7 +24,7 @@ for example NewBoard(5, 6)
 type Board struct {
 	rows  int      // Rows of the hexagonal board
 	cols  int      // Columns of the hexagonal board
-	Cells [][]cell // 2D array of cells representing the board
+	Cells [][]Cell // 2D array of cells representing the board
 }
 
 // NewBoard creates a new Board with the given number of rows and columns
@@ -33,10 +33,10 @@ func NewBoard(rows, cols int) (*Board, error) {
 		return nil, errIncorrectBoardSize
 	}
 
-	cells := make([][]cell, rows)
+	cells := make([][]Cell, rows)
 
 	for i := range cells {
-		cells[i] = make([]cell, cols-i%2)
+		cells[i] = make([]Cell, cols-i%2)
 
 		for j := range cells[i] {
 			cells[i][j] = newCell(i, j)
@@ -62,7 +62,7 @@ func (b *Board) Cols() int {
 	return b.cols
 }
 
-func (b *Board) calculatePower(player player) {
+func (b *Board) calculatePower(player Player) {
 	for _, row := range b.Cells {
 		for _, cell := range row {
 			if cell != nil && cell.Owner() == player {
@@ -79,7 +79,7 @@ func (b *Board) IsInsideBoard(coords Coords) bool {
 	return true
 }
 
-func (b *Board) GetCell(coords Coords) (cell, error) {
+func (b *Board) GetCell(coords Coords) (Cell, error) {
 	if !b.IsInsideBoard(coords) {
 		return nil, errIndexOutOfRange
 	}
@@ -91,11 +91,11 @@ func (b *Board) toMap() map[string]interface{} {
 	return map[string]interface{}{
 		"rows":  b.rows,
 		"cols":  b.cols,
-		"cells": toCellInterfaceSlice(b.Cells),
+		"cells": toCellSlice(b.Cells),
 	}
 }
 
-func toCellInterfaceSlice(cells [][]cell) [][]interface{} {
+func toCellSlice(cells [][]Cell) [][]interface{} {
 	result := make([][]interface{}, len(cells))
 	for i, row := range cells {
 		result[i] = make([]interface{}, len(row))

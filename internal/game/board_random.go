@@ -13,7 +13,7 @@ type randomMapGenerator struct {
 	currentCells                         int
 	maxNeighborCount                     int
 	swapProbability                      float64
-	cells                                [][]cell
+	cells                                [][]Cell
 	neighbors                            [][]int
 	r                                    *rand.Rand
 }
@@ -22,7 +22,7 @@ type randomMapGenerator struct {
 // This function allows customization of the generator's behavior using functional options.
 // If values for minRight, minBottom, minLeft, and minTop are not provided,
 // the default value of 1 will be used for all of them.
-func NewRandomMapGenerator(boardRow, boardCol int, cells [][]cell, r *rand.Rand, options ...func(*randomMapGenerator)) *randomMapGenerator {
+func NewRandomMapGenerator(boardRow, boardCol int, cells [][]Cell, r *rand.Rand, options ...func(*randomMapGenerator)) *randomMapGenerator {
 	gen := &randomMapGenerator{
 		minRight:         1,
 		minLeft:          1,
@@ -91,7 +91,7 @@ func WithSwapProbability(swapProbability float64) func(*randomMapGenerator) {
 }
 
 // addCell adds a new cell at the given row and column.
-func (g *randomMapGenerator) addCell(row, col int) cell {
+func (g *randomMapGenerator) addCell(row, col int) Cell {
 	g.cells[row][col] = newCell(row, col)
 	g.currentCells++
 
@@ -178,10 +178,10 @@ func NewRandomBoard(rows, cols int, seed int64) (*Board, error) {
 	halfRows := rows/2 + 1
 	halfCols := cols/2 + 1
 
-	cells := make([][]cell, halfRows, rows)
+	cells := make([][]Cell, halfRows, rows)
 
 	for i := range cells {
-		cells[i] = make([]cell, halfCols-i%2, cols)
+		cells[i] = make([]Cell, halfCols-i%2, cols)
 	}
 
 	startRow := r.Intn(halfRows)
@@ -211,7 +211,7 @@ func NewRandomBoard(rows, cols int, seed int64) (*Board, error) {
 
 	// Reflect the map horizontally
 	for i := rows/2 - 1; i >= 0; i-- {
-		cells = append(cells, make([]cell, len(cells[i])))
+		cells = append(cells, make([]Cell, len(cells[i])))
 		lastI := len(cells) - 1
 		for j := range cells[lastI] {
 			if cells[i][j] != nil {

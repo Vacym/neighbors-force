@@ -9,13 +9,13 @@ var (
 	errAttackAlreadyFinished = errors.New("Attack already finished")
 )
 
-type player interface {
+type Player interface {
 	Id() int     // ID of player
 	Points() int // points of player
 
 	attack() error
 	endAttack() error
-	upgrade(cell cell, levels int) error
+	upgrade(cell Cell, levels int) error
 	endUpgrade()
 
 	addCell()
@@ -24,32 +24,30 @@ type player interface {
 	toMap() map[string]interface{}
 }
 
-type PlayerInterface = player
-
-type Player struct {
+type player struct {
 	id         int  // ID of player
 	points     int  // Points that can be spent on upgrading cells or attacking
 	cellsCount int  // Count of cells, owned user
 	attacking  bool // phase of player turn
 }
 
-// NewPlayer creates a new Player with the given ID.
-func NewPlayer(id int) *Player {
-	return &Player{
+// newPlayer creates a new Player with the given ID.
+func newPlayer(id int) *player {
+	return &player{
 		id:        id,
 		attacking: true,
 	}
 }
 
-func (p *Player) Id() int {
+func (p *player) Id() int {
 	return p.id
 }
 
-func (p *Player) Points() int {
+func (p *player) Points() int {
 	return p.points
 }
 
-func (p *Player) attack() error {
+func (p *player) attack() error {
 	if !p.attacking {
 		return errAttackTurnExpired
 	}
@@ -57,7 +55,7 @@ func (p *Player) attack() error {
 	return nil
 }
 
-func (p *Player) endAttack() error {
+func (p *player) endAttack() error {
 	if p.attacking == false {
 		return errAttackAlreadyFinished
 	}
@@ -67,12 +65,12 @@ func (p *Player) endAttack() error {
 	return nil
 }
 
-func (p *Player) countPoints() {
+func (p *player) countPoints() {
 	p.points += p.cellsCount
 }
 
 // Method for upgrading a cell owned by a player
-func (p *Player) upgrade(cell cell, levels int) error {
+func (p *player) upgrade(cell Cell, levels int) error {
 	if p.attacking {
 		return errUpgradeTurnNotReached
 	}
@@ -89,7 +87,7 @@ func (p *Player) upgrade(cell cell, levels int) error {
 	return nil
 }
 
-func (p *Player) endUpgrade() {
+func (p *player) endUpgrade() {
 	if p.attacking == true {
 		p.endAttack()
 	}
@@ -97,17 +95,17 @@ func (p *Player) endUpgrade() {
 	p.attacking = true
 }
 
-func (p *Player) addCell() {
+func (p *player) addCell() {
 	p.cellsCount++
 }
 
-func (p *Player) deleteCell() {
+func (p *player) deleteCell() {
 	p.cellsCount--
 
 	// TODO: Realize loosing
 }
 
-func (p *Player) toMap() map[string]interface{} {
+func (p *player) toMap() map[string]interface{} {
 	return map[string]interface{}{
 		"id":          p.id,
 		"points":      p.points,

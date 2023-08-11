@@ -24,7 +24,7 @@ func NewUser() *User {
 	return &User{}
 }
 
-func (u *User) me() game.PlayerInterface {
+func (u *User) me() game.Player {
 	return u.GameBox.Game.Players[u.GameBox.UserId]
 }
 

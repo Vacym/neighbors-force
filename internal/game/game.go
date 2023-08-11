@@ -16,7 +16,7 @@ var (
 
 type Game struct {
 	Board   *Board   // Instance of the board
-	Players []player // List of players
+	Players []Player // List of players
 	turn    int      // ID of the player whose turn it is
 }
 
@@ -67,7 +67,7 @@ func NewFullGame(rows, cols int, numPlayers int) (*Game, error) {
 }
 
 // Creates a new Game with the given Board and number of players
-func NewGameWithBoard(board *Board, players []player) (*Game, error) {
+func NewGameWithBoard(board *Board, players []Player) (*Game, error) {
 	if len(players) < 2 {
 		return nil, errTooSmallPlayers
 	} else if len(players) > 4 {
@@ -83,15 +83,15 @@ func NewGameWithBoard(board *Board, players []player) (*Game, error) {
 	return game, nil
 }
 
-func NewPlayersSlice(numPlayers int) ([]player, error) {
+func NewPlayersSlice(numPlayers int) ([]Player, error) {
 	if numPlayers < 0 {
 		return nil, errNegativePlayers
 	}
 
-	players := make([]player, numPlayers)
+	players := make([]Player, numPlayers)
 
 	for i := range players {
-		players[i] = NewPlayer(i)
+		players[i] = newPlayer(i)
 	}
 
 	return players, nil
@@ -108,7 +108,7 @@ func (g *Game) placePlayers() {
 	const startLevel = 1
 
 	for idx, player := range g.Players {
-		var c cell
+		var c Cell
 		switch idx {
 		case 0:
 			c = findNearestCell(g.Board, 0, 0)
@@ -125,7 +125,7 @@ func (g *Game) placePlayers() {
 
 // findNearestCell finds the nearest cell to a given row and column coordinates
 // considering the constraints of the board's dimensions.
-func findNearestCell(board *Board, row, col int) cell {
+func findNearestCell(board *Board, row, col int) Cell {
 	// Offset for mirror columns
 	var offset int
 	if col > board.cols/2 {
@@ -173,7 +173,7 @@ func (g *Game) countPlayersCell() {
 }
 
 // Method for executing a attack in the game
-func (g *Game) Attack(player player, from, to cell) error {
+func (g *Game) Attack(player Player, from, to Cell) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -192,7 +192,7 @@ func (g *Game) Attack(player player, from, to cell) error {
 	return err
 }
 
-func (g *Game) EndAttack(player player) error {
+func (g *Game) EndAttack(player Player) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -200,7 +200,7 @@ func (g *Game) EndAttack(player player) error {
 	return player.endAttack()
 }
 
-func (g *Game) Upgrade(player player, target cell, levels int) error {
+func (g *Game) Upgrade(player Player, target Cell, levels int) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -220,7 +220,7 @@ func (g *Game) Upgrade(player player, target cell, levels int) error {
 }
 
 // Method for ending a player's turn
-func (g *Game) EndTurn(player player) error {
+func (g *Game) EndTurn(player Player) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -245,7 +245,7 @@ func (g *Game) ToMap() map[string]interface{} {
 	}
 }
 
-func toPlayerInterfaceSlice(players []player) []interface{} {
+func toPlayerInterfaceSlice(players []Player) []interface{} {
 	result := make([]interface{}, len(players))
 	for i, p := range players {
 		result[i] = p.toMap()

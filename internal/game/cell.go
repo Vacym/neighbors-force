@@ -16,61 +16,59 @@ type Coords struct {
 	Col int `json:"col"` // Column of the cell
 }
 
-type cell interface {
+type Cell interface {
 	Level() int
 	Power() int
-	Owner() player
+	Owner() Player
 	Row() int
 	Col() int
 
-	attack(target cell) error
+	attack(target Cell) error
 	upgrade(points int) error
 	calculatePower(*Board)
 
-	GetNeighbors(*Board) []cell
+	GetNeighbors(*Board) []Cell
 
 	toMap() map[string]interface{}
 }
 
-type CellInterface = cell
-
-type Cell struct {
+type cell struct {
 	coords Coords
 	level  int    // Level of cell
 	power  int    // Power of cell
-	owner  player // Pointer of the player who owns the cell, nil if the cell is unoccupied
+	owner  Player // Pointer of the player who owns the cell, nil if the cell is unoccupied
 }
 
-func (c Cell) Level() int {
+func (c cell) Level() int {
 	return c.level
 }
 
-func (c Cell) Power() int {
+func (c cell) Power() int {
 	return c.power
 }
 
-func (c Cell) Owner() player {
+func (c cell) Owner() Player {
 	return c.owner
 }
 
-func (c Cell) Row() int {
+func (c cell) Row() int {
 	return c.coords.Row
 }
 
-func (c Cell) Col() int {
+func (c cell) Col() int {
 	return c.coords.Col
 }
 
-func newCell(row, col int) *Cell {
-	return &Cell{
+func newCell(row, col int) *cell {
+	return &cell{
 		coords: Coords{row, col},
 		power:  1,
 		level:  1,
 	}
 }
 
-func newCellWithParameters(row, col int, level, power int, owner player) *Cell {
-	return &Cell{
+func newCellWithParameters(row, col int, level, power int, owner Player) *cell {
+	return &cell{
 		coords: Coords{row, col},
 		level:  level,
 		power:  power,
@@ -79,8 +77,8 @@ func newCellWithParameters(row, col int, level, power int, owner player) *Cell {
 }
 
 // Returns neighbors of the cell
-func (c Cell) GetNeighbors(board *Board) []cell {
-	neighbors := make([]cell, 0, 6)
+func (c cell) GetNeighbors(board *Board) []Cell {
+	neighbors := make([]Cell, 0, 6)
 
 	neighborCoords := getNeighborCoords(c.Row(), c.Col(), board.Rows(), board.Cols())
 
@@ -94,8 +92,8 @@ func (c Cell) GetNeighbors(board *Board) []cell {
 }
 
 // Attacks target cell and defines new owner of target
-func (c *Cell) attack(targetInterface cell) error {
-	target := targetInterface.(*Cell)
+func (c *cell) attack(targetInterface Cell) error {
+	target := targetInterface.(*cell)
 	if c.owner == target.owner {
 		return errSamePlayerCell
 	}
@@ -116,7 +114,7 @@ func (c *Cell) attack(targetInterface cell) error {
 	return nil
 }
 
-func (c *Cell) handleAttack(attacker cell) error {
+func (c *cell) handleAttack(attacker Cell) error {
 	attackPower := attacker.Power()
 	c.power -= attackPower
 
@@ -134,7 +132,7 @@ func (c *Cell) handleAttack(attacker cell) error {
 	return nil
 }
 
-func (c *Cell) calculatePower(board *Board) {
+func (c *cell) calculatePower(board *Board) {
 	if c.owner == nil {
 		return
 	}
@@ -150,7 +148,7 @@ func (c *Cell) calculatePower(board *Board) {
 	c.power = newPower
 }
 
-func (c *Cell) upgrade(levels int) error {
+func (c *cell) upgrade(levels int) error {
 	c.level += levels
 
 	return nil
@@ -183,7 +181,7 @@ func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
 	return neighborCoords
 }
 
-func (c *Cell) isNeighbor(cell2 *Cell) bool {
+func (c *cell) isNeighbor(cell2 *cell) bool {
 	cell1 := c
 	if cell1.Row() == cell2.Row() && math.Abs(float64(cell1.Col()-cell2.Col())) == 1 {
 		return true
@@ -195,7 +193,7 @@ func (c *Cell) isNeighbor(cell2 *Cell) bool {
 	}
 }
 
-func (c *Cell) toMap() map[string]interface{} {
+func (c *cell) toMap() map[string]interface{} {
 	result := map[string]interface{}{
 		"level": c.level,
 		"power": c.power,

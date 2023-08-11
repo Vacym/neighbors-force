@@ -280,8 +280,8 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 
 func doAllBotsTurns(g *game.Game, playerId int) {
 	for g.Turn() != playerId {
-		bot.DoTurn(g, g.Players[g.Turn()].(*game.Player))
-		bot.DoUpgrade(g, g.Players[g.Turn()].(*game.Player))
+		bot.DoTurn(g, g.Players[g.Turn()])
+		bot.DoUpgrade(g, g.Players[g.Turn()])
 	}
 }
 

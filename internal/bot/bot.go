@@ -16,7 +16,7 @@ func filter[T any](ss []T, test func(T) bool) (ret []T) {
 	return
 }
 
-func DoTurn(g *game.Game, player *game.Player) error {
+func DoTurn(g *game.Game, player game.Player) error {
 	// temporary implementation
 	for _, row := range g.Board.Cells {
 		for _, cell := range row {
@@ -25,7 +25,7 @@ func DoTurn(g *game.Game, player *game.Player) error {
 			}
 
 			if cell.Owner() == player {
-				err := attack(g, cell.(*game.Cell))
+				err := attack(g, cell)
 				if err != nil {
 					return err
 				}
@@ -37,32 +37,32 @@ func DoTurn(g *game.Game, player *game.Player) error {
 	return fmt.Errorf("no cells found for player %v", player.Id())
 }
 
-func attack(g *game.Game, cell *game.Cell) error {
+func attack(g *game.Game, cell game.Cell) error {
 	player := cell.Owner()
 	neighbors := cell.GetNeighbors(g.Board)
-	alienNeighbors := filter(neighbors, func(neighbor game.CellInterface) bool { return neighbor.Owner() != player })
+	alienNeighbors := filter(neighbors, func(neighbor game.Cell) bool { return neighbor.Owner() != player })
 	if len(alienNeighbors) > 0 {
 		to := alienNeighbors[rand.Intn(len(alienNeighbors))]
 		g.Attack(player, cell, to)
 		if to.Owner() == cell.Owner() {
-			err := attack(g, to.(*game.Cell))
+			err := attack(g, to)
 			return err
 		}
 	}
 	return nil
 }
 
-func DoUpgrade(g *game.Game, player *game.Player) error {
+func DoUpgrade(g *game.Game, player game.Player) error {
 	// ChatGPT powered
 	// Find all cells owned by the player and store them in an array
-	var ownedCells []*game.Cell
+	var ownedCells []game.Cell
 	for _, row := range g.Board.Cells {
 		for _, cell := range row {
 			if cell == nil {
 				continue
 			}
 			if cell.Owner() == player {
-				ownedCells = append(ownedCells, cell.(*game.Cell))
+				ownedCells = append(ownedCells, cell)
 			}
 		}
 	}
