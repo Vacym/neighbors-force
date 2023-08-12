@@ -3,27 +3,43 @@ package game
 import "errors"
 
 var (
-	errAttackTurnExpired     = errors.New("Attack turn has expired")
-	errUpgradeTurnNotReached = errors.New("Upgrade time has not been reached")
-	errNotEnoughPoints       = errors.New("Not enough points to upgrade")
-	errAttackAlreadyFinished = errors.New("Attack already finished")
+	errAttackTurnExpired     = errors.New("attack turn has expired")
+	errUpgradeTurnNotReached = errors.New("upgrade time has not been reached")
+	errNotEnoughPoints       = errors.New("not enough points to upgrade")
+	errAttackAlreadyFinished = errors.New("attack already finished")
 )
 
+// Player represents a player in the game.
 type Player interface {
-	Id() int     // ID of player
-	Points() int // points of player
+	// Id returns the ID of the player.
+	Id() int
 
+	// Points returns the points of the player.
+	Points() int
+
+	// attack initiates an attack for the player's turn.
 	attack() error
+
+	// endAttack concludes the attack phase for the player.
 	endAttack() error
+
+	// upgrade upgrades a cell owned by the player.
 	upgrade(cell Cell, levels int) error
+
+	// endUpgrade concludes the upgrade phase for the player's turn.
 	endUpgrade()
 
+	// addCell increments the player's cell count.
 	addCell()
+
+	// deleteCell decrements the player's cell count.
 	deleteCell()
 
+	// toMap converts the player's information into a map for serialization.
 	toMap() map[string]interface{}
 }
 
+// player implements the Player interface.
 type player struct {
 	id         int  // ID of player
 	points     int  // Points that can be spent on upgrading cells or attacking
@@ -39,14 +55,17 @@ func newPlayer(id int) *player {
 	}
 }
 
+// Id returns the ID of the player.
 func (p *player) Id() int {
 	return p.id
 }
 
+// Points returns the points of the player.
 func (p *player) Points() int {
 	return p.points
 }
 
+// attack performs an attack for the player.
 func (p *player) attack() error {
 	if !p.attacking {
 		return errAttackTurnExpired
@@ -55,6 +74,7 @@ func (p *player) attack() error {
 	return nil
 }
 
+// endAttack ends the attack phase for the player.
 func (p *player) endAttack() error {
 	if p.attacking == false {
 		return errAttackAlreadyFinished
@@ -65,11 +85,12 @@ func (p *player) endAttack() error {
 	return nil
 }
 
+// countPoints calculates the points based on the player's cell count.
 func (p *player) countPoints() {
 	p.points += p.cellsCount
 }
 
-// Method for upgrading a cell owned by a player
+// upgrade upgrades a cell owned by the player.
 func (p *player) upgrade(cell Cell, levels int) error {
 	if p.attacking {
 		return errUpgradeTurnNotReached
@@ -87,6 +108,7 @@ func (p *player) upgrade(cell Cell, levels int) error {
 	return nil
 }
 
+// endUpgrade ends the upgrade phase for the player.
 func (p *player) endUpgrade() {
 	if p.attacking == true {
 		p.endAttack()
@@ -95,16 +117,19 @@ func (p *player) endUpgrade() {
 	p.attacking = true
 }
 
+// addCell increments the count of cells owned by the player.
 func (p *player) addCell() {
 	p.cellsCount++
 }
 
+// deleteCell decrements the count of cells owned by the player.
 func (p *player) deleteCell() {
 	p.cellsCount--
 
 	// TODO: Realize loosing
 }
 
+// toMap converts the player's information into a map for serialization.
 func (p *player) toMap() map[string]interface{} {
 	return map[string]interface{}{
 		"id":          p.id,

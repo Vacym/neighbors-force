@@ -125,7 +125,7 @@ func (g *randomMapGenerator) timeToStop() bool {
 		g.bottom >= g.minBottom
 }
 
-// shuffleCoords shuffle slice of coords
+// shuffleCoords shuffles a slice of coordinates for randomization.
 func (g *randomMapGenerator) shuffleCoords(coords []Coords) {
 
 	sort.Slice(coords, func(i, j int) bool {

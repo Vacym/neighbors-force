@@ -11,28 +11,34 @@ var (
 	errIndexOutOfRange = errors.New("index out of range")
 )
 
+// gameBox holds a reference to the current game and the user's ID.
 type gameBox struct {
 	Game   *game.Game
 	UserId int
 }
 
+// User represents a user and their actions in the game.
 type User struct {
 	GameBox gameBox
 }
 
+// NewUser creates a new User instance.
 func NewUser() *User {
 	return &User{}
 }
 
+// me returns the current user's player instance.
 func (u *User) me() game.Player {
 	return u.GameBox.Game.Players[u.GameBox.UserId]
 }
 
+// createGame sets the current game and user's ID in the user's GameBox.
 func (u *User) createGame(g *game.Game, id int) {
 	u.GameBox.Game = g
 	u.GameBox.UserId = id
 }
 
+// attack performs an attack from a source cell to a target cell.
 func (u *User) attack(from, to game.Coords) error {
 	g := u.GameBox.Game
 
@@ -49,6 +55,7 @@ func (u *User) attack(from, to game.Coords) error {
 	return g.Attack(g.Players[u.GameBox.UserId], fromCell, toCell)
 }
 
+// endAttack ends the current attack phase for the user.
 func (u *User) endAttack() error {
 	g := u.GameBox.Game
 
@@ -59,6 +66,7 @@ func (u *User) endAttack() error {
 	return g.EndAttack(u.me())
 }
 
+// makeUpgrade upgrades a cell owned by the user.
 func (u *User) makeUpgrade(cellCoords game.Coords, levels int) error {
 	g := u.GameBox.Game
 
@@ -74,6 +82,7 @@ func (u *User) makeUpgrade(cellCoords game.Coords, levels int) error {
 	return g.Upgrade(u.me(), cell, levels)
 }
 
+// endTurn ends the current turn for the user.
 func (u *User) endTurn() error {
 	g := u.GameBox.Game
 

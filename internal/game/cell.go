@@ -11,27 +11,46 @@ var (
 	errIsNotNeighbor  = errors.New("cell can attack only it's neighbor")
 )
 
+// Coords represents row and column indices of a cell.
 type Coords struct {
 	Row int `json:"row"` // Row of the cell
 	Col int `json:"col"` // Column of the cell
 }
 
+// Cell represents a hexagonal cell on the game board.
 type Cell interface {
+	// Level returns the level of the cell.
 	Level() int
+
+	// Power returns the power of the cell.
 	Power() int
+
+	// Owner returns the player who owns the cell.
 	Owner() Player
+
+	// Row returns the row index of the cell.
 	Row() int
+
+	// Col returns the column index of the cell.
 	Col() int
 
+	// Attack performs an attack on a target cell.
 	attack(target Cell) error
-	upgrade(points int) error
-	calculatePower(*Board)
 
-	GetNeighbors(*Board) []Cell
+	// Upgrade increases the level of the cell by a specified number of levels.
+	upgrade(levels int) error
 
+	// CalculatePower calculates the power of the cell considering its neighbors.
+	calculatePower(board *Board)
+
+	// GetNeighbors returns the neighboring cells of the cell on the board.
+	GetNeighbors(board *Board) []Cell
+
+	// ToMap converts the cell's information into a map for serialization.
 	toMap() map[string]interface{}
 }
 
+// cell implements the Cell interface.
 type cell struct {
 	coords Coords
 	level  int    // Level of cell
@@ -39,26 +58,32 @@ type cell struct {
 	owner  Player // Pointer of the player who owns the cell, nil if the cell is unoccupied
 }
 
+// Level returns the level of the cell.
 func (c cell) Level() int {
 	return c.level
 }
 
+// Power returns the power of the cell.
 func (c cell) Power() int {
 	return c.power
 }
 
+// Owner returns the player who owns the cell.
 func (c cell) Owner() Player {
 	return c.owner
 }
 
+// Row returns the row index of the cell.
 func (c cell) Row() int {
 	return c.coords.Row
 }
 
+// Col returns the column index of the cell.
 func (c cell) Col() int {
 	return c.coords.Col
 }
 
+// newCell creates a new cell with default parameters.
 func newCell(row, col int) *cell {
 	return &cell{
 		coords: Coords{row, col},
@@ -67,6 +92,7 @@ func newCell(row, col int) *cell {
 	}
 }
 
+// newCellWithParameters creates a new cell with specified parameters.
 func newCellWithParameters(row, col int, level, power int, owner Player) *cell {
 	return &cell{
 		coords: Coords{row, col},
@@ -76,7 +102,7 @@ func newCellWithParameters(row, col int, level, power int, owner Player) *cell {
 	}
 }
 
-// Returns neighbors of the cell
+// GetNeighbors returns the neighboring cells of the cell on the board.
 func (c cell) GetNeighbors(board *Board) []Cell {
 	neighbors := make([]Cell, 0, 6)
 
@@ -91,7 +117,7 @@ func (c cell) GetNeighbors(board *Board) []Cell {
 	return neighbors
 }
 
-// Attacks target cell and defines new owner of target
+// attack performs an attack on a target cell.
 func (c *cell) attack(targetInterface Cell) error {
 	target := targetInterface.(*cell)
 	if c.owner == target.owner {
@@ -114,6 +140,7 @@ func (c *cell) attack(targetInterface Cell) error {
 	return nil
 }
 
+// handleAttack updates the cell after an attack.
 func (c *cell) handleAttack(attacker Cell) error {
 	attackPower := attacker.Power()
 	c.power -= attackPower
@@ -132,6 +159,7 @@ func (c *cell) handleAttack(attacker Cell) error {
 	return nil
 }
 
+// calculatePower calculates the power of the cell considering its neighbors.
 func (c *cell) calculatePower(board *Board) {
 	if c.owner == nil {
 		return
@@ -148,12 +176,14 @@ func (c *cell) calculatePower(board *Board) {
 	c.power = newPower
 }
 
+// upgrade increases the level of the cell by a specified number of levels.
 func (c *cell) upgrade(levels int) error {
 	c.level += levels
 
 	return nil
 }
 
+// getNeighborCoords returns the coordinates of neighboring cells.
 func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
 	// Offset is necessary because the hexagonal cells
 	// are not placed under each other.
@@ -181,6 +211,7 @@ func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
 	return neighborCoords
 }
 
+// isNeighbor checks if a given cell is a neighbor of the current cell.
 func (c *cell) isNeighbor(cell2 *cell) bool {
 	cell1 := c
 	if cell1.Row() == cell2.Row() && math.Abs(float64(cell1.Col()-cell2.Col())) == 1 {
@@ -193,6 +224,7 @@ func (c *cell) isNeighbor(cell2 *cell) bool {
 	}
 }
 
+// toMap converts the cell's information into a map for serialization.
 func (c *cell) toMap() map[string]interface{} {
 	result := map[string]interface{}{
 		"level": c.level,

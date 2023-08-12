@@ -14,10 +14,12 @@ import (
 	"github.com/gorilla/sessions"
 )
 
+// Error definition for incorrect player ID.
 var (
 	errIncorrectPlayerId = errors.New("incorrect player_id")
 )
 
+// Key type for context value.
 type key int
 
 const (
@@ -25,13 +27,15 @@ const (
 	ctxKeyUser  key = iota
 )
 
+// apiServer handles API requests.
 type apiServer struct {
 	router       *mux.Router
-	testRouter   *mux.Router // Отдельный роутер для тестовых хендлеров
+	testRouter   *mux.Router // Separate router for test handlers
 	sessionStore sessions.Store
 	activeUsers  map[string]*User
 }
 
+// newServer creates a new instance of apiServer.
 func newServer(sessionStore sessions.Store) *apiServer {
 	s := &apiServer{
 		router:       mux.NewRouter(),
@@ -45,14 +49,17 @@ func newServer(sessionStore sessions.Store) *apiServer {
 	return s
 }
 
+// ServeHTTP implements the http.Handler interface.
 func (s *apiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
+// ServeTestHTTP serves requests for testing.
 func (s *apiServer) ServeTestHTTP(w http.ResponseWriter, r *http.Request) {
 	s.testRouter.ServeHTTP(w, r)
 }
 
+// configureRouter configures the API routes.
 func (s *apiServer) configureRouter() {
 	s.router.Use(s.UserMiddleware)
 	s.router.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
@@ -60,14 +67,14 @@ func (s *apiServer) configureRouter() {
 	s.router.HandleFunc("/game/end_attack", s.handleEndAttack()).Methods("POST")
 	s.router.HandleFunc("/game/upgrade", s.handleMakeUpgrade()).Methods("POST")
 	s.router.HandleFunc("/game/end_turn", s.handleEndTurn()).Methods("POST")
-
 	s.router.HandleFunc("/game/get_map", s.handleGetMap()).Methods("GET")
 
-	// Add a test handler, which is only used in tests.
+	// Add a test handler, used only in tests.
 	s.testRouter.Use(s.UserMiddleware)
 	s.testRouter.HandleFunc("/test/create_full", s.CreateFullGame()).Methods("POST")
 }
 
+// UserMiddleware is a middleware that handles user-related tasks.
 func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := s.sessionStore.Get(r, sessionName)
@@ -96,6 +103,7 @@ func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// handleCreateGame handles the creation of a new game.
 func (s *apiServer) handleCreateGame() http.HandlerFunc {
 	type request struct {
 		Rows       int `json:"rows"`
@@ -134,6 +142,7 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 	}
 }
 
+// handleMakeAttack handles the attack action.
 func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 	type request struct {
 		From struct {
@@ -167,9 +176,9 @@ func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 	}
 }
 
+// handleEndAttack handles ending the attack phase.
 func (s *apiServer) handleEndAttack() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		user := r.Context().Value(ctxKeyUser).(*User)
 		err := user.endAttack()
 
@@ -182,6 +191,7 @@ func (s *apiServer) handleEndAttack() http.HandlerFunc {
 	}
 }
 
+// handleMakeUpgrade handles the cell upgrade action.
 func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
 	type request struct {
 		Cell   game.Coords `json:"cell"`
@@ -209,9 +219,9 @@ func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
 	}
 }
 
+// handleEndTurn handles ending the current turn.
 func (s *apiServer) handleEndTurn() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		user := r.Context().Value(ctxKeyUser).(*User)
 		err := user.endTurn()
 
@@ -220,17 +230,15 @@ func (s *apiServer) handleEndTurn() http.HandlerFunc {
 			return
 		}
 
-		// bot.DoTurn(user.GameBox.Game, user.me().(*game.Player))
-
 		doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId)
 
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
 
+// handleGetMap handles retrieving the game map.
 func (s *apiServer) handleGetMap() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		user := r.Context().Value(ctxKeyUser).(*User)
 
 		if user.GameBox.Game == nil {
@@ -242,7 +250,7 @@ func (s *apiServer) handleGetMap() http.HandlerFunc {
 	}
 }
 
-// Endpoint imitation for tests
+// CreateFullGame is an endpoint imitation for tests.
 func (s *apiServer) CreateFullGame() http.HandlerFunc {
 	type request struct {
 		Rows       int `json:"rows"`
@@ -278,6 +286,7 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 	}
 }
 
+// doAllBotsTurns performs the turns for all AI players.
 func doAllBotsTurns(g *game.Game, playerId int) {
 	for g.Turn() != playerId {
 		bot.DoTurn(g, g.Players[g.Turn()])
@@ -285,12 +294,14 @@ func doAllBotsTurns(g *game.Game, playerId int) {
 	}
 }
 
+// error responds with an error message.
 func (s *apiServer) error(w http.ResponseWriter, r *http.Request, code int, err error) {
 	s.respond(w, r, code, map[string]string{
 		"error": err.Error(),
 	})
 }
 
+// respond writes a response to the client.
 func (s *apiServer) respond(w http.ResponseWriter, r *http.Request, code int, data any) {
 	w.WriteHeader(code)
 
