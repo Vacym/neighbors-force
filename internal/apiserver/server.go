@@ -272,7 +272,7 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 			return
 		}
 
-		g, err := game.NewFullGame(req.Rows, req.Cols, req.NumPlayers)
+		g, err := game.NewCompleteBoardGame(req.Rows, req.Cols, req.NumPlayers)
 
 		if err != nil {
 			s.error(w, r, http.StatusUnprocessableEntity, err)

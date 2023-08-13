@@ -2,6 +2,7 @@ package game
 
 import (
 	"errors"
+	"math"
 )
 
 var (
@@ -82,6 +83,15 @@ func (b *Board) IsInsideBoard(coords Coords) bool {
 	return true
 }
 
+// HasCellAt checks if there is a cell at the given coordinates on the board.
+func (b *Board) HasCellAt(coords Coords) bool {
+	cell, err := b.GetCell(coords)
+	if err != nil || cell == nil {
+		return false
+	}
+	return true
+}
+
 // GetCell returns the cell at the specified coordinates on the board.
 func (b *Board) GetCell(coords Coords) (Cell, error) {
 	if !b.IsInsideBoard(coords) {
@@ -114,4 +124,45 @@ func toCellSlice(cells [][]Cell) [][]interface{} {
 		}
 	}
 	return result
+}
+
+// IsNeighborCoords checks if the given coordinates are neighbors.
+func IsNeighborCoords(coord1, coord2 Coords) bool {
+	if coord1.Row == coord2.Row && math.Abs(float64(coord1.Col-coord2.Col)) == 1 {
+		return true
+	} else if math.Abs(float64(coord1.Row-coord2.Row)) == 1 {
+		offset := coord1.Row % 2
+		return coord1.Col-coord2.Col == 0-offset || coord1.Col-coord2.Col == 1-offset
+	}
+	return false
+}
+
+// GetNeighborCoords returns the coordinates of neighboring cells.
+func GetNeighborCoords(coords Coords, boardRow, boardCol int) []Coords {
+	row, col := coords.Row, coords.Col
+	// Offset is necessary because the hexagonal cells
+	// are not placed under each other.
+	// The offset depends on the row number.
+
+	offset := row % 2
+	neighborsRelative := [6]Coords{
+		{-1, offset - 1}, // up-left
+		{-1, offset - 0}, // up-right
+		{+1, offset - 1}, // down-left
+		{+1, offset - 0}, // down-right
+		{0, -1},          // left
+		{0, +1},          // right
+	}
+
+	neighborCoords := make([]Coords, 0, 6)
+
+	for _, relative := range neighborsRelative {
+		neighborRow := row + relative.Row
+		neighborCol := col + relative.Col
+		if neighborRow >= 0 && neighborCol >= 0 && neighborRow < boardRow && neighborCol < boardCol-neighborRow%2 {
+			neighborCoords = append(neighborCoords, Coords{neighborRow, neighborCol})
+		}
+	}
+
+	return neighborCoords
 }

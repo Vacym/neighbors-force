@@ -76,7 +76,7 @@ func (p *player) attack() error {
 
 // endAttack ends the attack phase for the player.
 func (p *player) endAttack() error {
-	if p.attacking == false {
+	if !p.attacking {
 		return errAttackAlreadyFinished
 	}
 
@@ -110,7 +110,7 @@ func (p *player) upgrade(cell Cell, levels int) error {
 
 // endUpgrade ends the upgrade phase for the player.
 func (p *player) endUpgrade() {
-	if p.attacking == true {
+	if p.attacking {
 		p.endAttack()
 	}
 

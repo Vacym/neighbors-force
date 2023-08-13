@@ -2,7 +2,6 @@ package game
 
 import (
 	"errors"
-	"math"
 )
 
 var (
@@ -33,6 +32,9 @@ type Cell interface {
 
 	// Col returns the column index of the cell.
 	Col() int
+
+	//Coords returns the coords of the cell.
+	Coords() Coords
 
 	// Attack performs an attack on a target cell.
 	attack(target Cell) error
@@ -83,6 +85,11 @@ func (c cell) Col() int {
 	return c.coords.Col
 }
 
+// Coords returns the coords of the cell.
+func (c cell) Coords() Coords {
+	return c.coords
+}
+
 // newCell creates a new cell with default parameters.
 func newCell(row, col int) *cell {
 	return &cell{
@@ -106,10 +113,10 @@ func newCellWithParameters(row, col int, level, power int, owner Player) *cell {
 func (c cell) GetNeighbors(board *Board) []Cell {
 	neighbors := make([]Cell, 0, 6)
 
-	neighborCoords := getNeighborCoords(c.Row(), c.Col(), board.Rows(), board.Cols())
+	neighborCoords := GetNeighborCoords(c.Coords(), board.Rows(), board.Cols())
 
 	for _, coord := range neighborCoords {
-		if board.Cells[coord.Row][coord.Col] != nil {
+		if board.HasCellAt(coord) {
 			neighbors = append(neighbors, board.Cells[coord.Row][coord.Col])
 		}
 	}
@@ -183,45 +190,9 @@ func (c *cell) upgrade(levels int) error {
 	return nil
 }
 
-// getNeighborCoords returns the coordinates of neighboring cells.
-func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
-	// Offset is necessary because the hexagonal cells
-	// are not placed under each other.
-	// The offset depends on the row number.
-	offset := row % 2
-	neighborsRelative := [6]Coords{
-		{-1, offset - 1}, // up-left
-		{-1, offset - 0}, // up-right
-		{+1, offset - 1}, // down-left
-		{+1, offset - 0}, // down-right
-		{0, -1},          // left
-		{0, +1},          // right
-	}
-
-	neighborCoords := make([]Coords, 0, 6)
-
-	for _, relative := range neighborsRelative {
-		neighborRow := row + relative.Row
-		neighborCol := col + relative.Col
-		if neighborRow >= 0 && neighborCol >= 0 && neighborRow < boardRow && neighborCol < boardCol-neighborRow%2 {
-			neighborCoords = append(neighborCoords, Coords{neighborRow, neighborCol})
-		}
-	}
-
-	return neighborCoords
-}
-
 // isNeighbor checks if a given cell is a neighbor of the current cell.
-func (c *cell) isNeighbor(cell2 *cell) bool {
-	cell1 := c
-	if cell1.Row() == cell2.Row() && math.Abs(float64(cell1.Col()-cell2.Col())) == 1 {
-		return true
-	} else if math.Abs(float64(cell1.Row()-cell2.Row())) == 1 {
-		offset := cell1.Row() % 2
-		return cell1.Col()-cell2.Col() == 0-offset || cell1.Col()-cell2.Col() == 1-offset
-	} else {
-		return false
-	}
+func (c *cell) isNeighbor(cell2 Cell) bool {
+	return IsNeighborCoords(c.Coords(), cell2.Coords())
 }
 
 // toMap converts the cell's information into a map for serialization.

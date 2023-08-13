@@ -108,7 +108,7 @@ func (g *randomMapGenerator) addCell(row, col int) Cell {
 		g.right++
 	}
 
-	for _, coord := range getNeighborCoords(row, col, g.boardRow, g.boardCol) {
+	for _, coord := range GetNeighborCoords(Coords{row, col}, g.boardRow, g.boardCol) {
 		if g.neighbors[coord.Row][coord.Col] < g.maxNeighborCount {
 			g.neighbors[coord.Row][coord.Col]++
 		}
@@ -150,7 +150,7 @@ func (g *randomMapGenerator) generateHexMap(row, col int) {
 	}
 
 	g.addCell(row, col)
-	neighbors := getNeighborCoords(row, col, g.boardRow, g.boardCol)
+	neighbors := GetNeighborCoords(Coords{row, col}, g.boardRow, g.boardCol)
 	g.shuffleCoords(neighbors)
 
 	for _, neighbor := range neighbors {

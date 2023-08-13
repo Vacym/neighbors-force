@@ -22,14 +22,19 @@ type Game struct {
 	turn    int      // ID of the player whose turn it is
 }
 
-// NewGame creates a new Game with a random Board and specified number of players.
-func NewGame(rows, cols int, numPlayers int, seed int64) (*Game, error) {
+// createGame creates a new game with a given board and players.
+func createGame(rows, cols, numPlayers int, seed int64, isFull bool) (*Game, error) {
 	players, err := NewPlayersSlice(numPlayers)
 	if err != nil {
 		return nil, err
 	}
 
-	board, err := NewRandomBoard(rows, cols, seed)
+	var board *Board
+	if isFull {
+		board, err = NewBoard(rows, cols)
+	} else {
+		board, err = NewRandomBoard(rows, cols, seed)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -45,27 +50,14 @@ func NewGame(rows, cols int, numPlayers int, seed int64) (*Game, error) {
 	return game, nil
 }
 
-// NewFullGame creates a new Game with a fully filled board (for testing purposes).
-func NewFullGame(rows, cols int, numPlayers int) (*Game, error) {
-	players, err := NewPlayersSlice(numPlayers)
-	if err != nil {
-		return nil, err
-	}
+// NewGame creates a new Game with a random Board and specified number of players.
+func NewGame(rows, cols int, numPlayers int, seed int64) (*Game, error) {
+	return createGame(rows, cols, numPlayers, seed, false)
+}
 
-	board, err := NewBoard(rows, cols)
-	if err != nil {
-		return nil, err
-	}
-
-	game, err := NewGameWithBoard(board, players)
-	if err != nil {
-		return nil, err
-	}
-
-	game.placePlayers()
-	game.countPlayersCell()
-
-	return game, nil
+// NewCompleteBoardGame creates a new Game with a fully filled board (for testing purposes).
+func NewCompleteBoardGame(rows, cols int, numPlayers int) (*Game, error) {
+	return createGame(rows, cols, numPlayers, 0, true)
 }
 
 // NewGameWithBoard creates a new Game with a given Board and player list.
@@ -137,14 +129,17 @@ func findNearestCell(board *Board, row, col int) Cell {
 		}
 	}
 
+	var cell Cell
 	for dist := 0; dist < max(board.cols, board.rows); dist++ {
 		// Search left
-		if col-dist >= 0 && board.Cells[row][col-dist] != nil {
-			return board.Cells[row][col-dist]
+		cell, _ = board.GetCell(Coords{row, col - dist})
+		if cell != nil {
+			return cell
 		}
 		// Search right
-		if col+dist < board.cols-row%2 && board.Cells[row][col+dist] != nil {
-			return board.Cells[row][col+dist]
+		cell, _ = board.GetCell(Coords{row, col + dist})
+		if cell != nil {
+			return cell
 		}
 
 		var locOffset int
@@ -153,12 +148,14 @@ func findNearestCell(board *Board, row, col int) Cell {
 		}
 
 		// Search up
-		if row-dist >= 0 && board.Cells[row-dist][col+locOffset] != nil {
-			return board.Cells[row-dist][col+locOffset]
+		cell, _ = board.GetCell(Coords{row - dist, col + locOffset})
+		if cell != nil {
+			return cell
 		}
 		// Search down
-		if row+dist < board.rows && board.Cells[row+dist][col+locOffset] != nil {
-			return board.Cells[row+dist][col+locOffset]
+		cell, _ = board.GetCell(Coords{row + dist, col + locOffset})
+		if cell != nil {
+			return cell
 		}
 	}
 	return nil
