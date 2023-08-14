@@ -256,21 +256,3 @@ func toPlayerInterfaceSlice(players []Player) []interface{} {
 	}
 	return result
 }
-
-// min returns the minimum of two integers.
-func min(x, y int) int {
-	// Delete after Go 1.21 (Q3 2023)
-	if x < y {
-		return x
-	}
-	return y
-}
-
-// max returns the maximum of two integers.
-func max(x, y int) int {
-	// Delete after Go 1.21 (Q3 2023)
-	if x > y {
-		return x
-	}
-	return y
-}
