@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/Vacym/neighbors-force/internal/bot"
@@ -12,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/sirupsen/logrus"
 )
 
 // Error definition for incorrect player ID.
@@ -33,18 +33,23 @@ type apiServer struct {
 	testRouter   *mux.Router // Separate router for test handlers
 	sessionStore sessions.Store
 	activeUsers  map[string]*User
+	logger       *logrus.Logger
 }
 
 // newServer creates a new instance of apiServer.
-func newServer(sessionStore sessions.Store) *apiServer {
+func newServer(sessionStore sessions.Store, logLevel logrus.Level) *apiServer {
 	s := &apiServer{
 		router:       mux.NewRouter(),
 		testRouter:   mux.NewRouter(),
 		sessionStore: sessionStore,
 		activeUsers:  make(map[string]*User),
+		logger:       logrus.New(),
 	}
 
+	s.logger.SetLevel(logLevel)
 	s.configureRouter()
+
+	s.logger.Info("API server initialized")
 
 	return s
 }
@@ -79,6 +84,7 @@ func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := s.sessionStore.Get(r, sessionName)
 		if err != nil {
+			s.logger.WithError(err).Error("Error getting session")
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
 		}
@@ -92,13 +98,13 @@ func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 
 		user, ok := s.activeUsers[userID]
 		if !ok {
-			fmt.Println("create new user")
+			s.logger.Info("Creating new user")
 			user = NewUser()
 			s.activeUsers[userID] = user
 		}
 
 		ctx := context.WithValue(r.Context(), ctxKeyUser, user)
-		fmt.Println("add user to context")
+		s.logger.WithField("user_id", userID).Debug("Adding user to context")
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -112,18 +118,17 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		PlayerId   int `json:"player_id"`
 	}
 
-	fmt.Println("logging")
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Body)
 		req := &request{}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.logger.WithError(err).Error("Error decoding request")
 			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
 
 		if req.PlayerId < 0 || req.PlayerId >= req.NumPlayers {
+			s.logger.WithField("player_id", req.PlayerId).Error("Incorrect player ID")
 			s.error(w, r, http.StatusUnprocessableEntity, errIncorrectPlayerId)
 			return
 		}
@@ -131,6 +136,7 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		g, err := game.NewGame(req.Rows, req.Cols, req.NumPlayers, 0)
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error creating new game")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -138,6 +144,10 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		user := r.Context().Value(ctxKeyUser).(*User)
 		user.createGame(g, req.PlayerId)
 
+		s.logger.WithFields(logrus.Fields{
+			"cols": g.Board.Cols(),
+			"rows": g.Board.Rows(),
+		}).Info("New game")
 		s.respond(w, r, http.StatusCreated, g.ToMap())
 	}
 }
@@ -156,10 +166,10 @@ func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Body)
 		req := &request{}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.logger.WithError(err).Error("Error decoding request")
 			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
@@ -168,10 +178,15 @@ func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 		err := user.attack(game.Coords(req.From), game.Coords(req.To))
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error handling attack")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
+		s.logger.WithFields(logrus.Fields{
+			"from": req.From,
+			"to":   req.To,
+		}).Info("Attack executed")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
@@ -183,10 +198,12 @@ func (s *apiServer) handleEndAttack() http.HandlerFunc {
 		err := user.endAttack()
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error ending attack")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
+		s.logger.Info("Attack phase ended")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
@@ -199,10 +216,10 @@ func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Body)
 		req := &request{}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.logger.WithError(err).Error("Error decoding request")
 			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
@@ -211,10 +228,12 @@ func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
 		err := user.makeUpgrade(req.Cell, req.Levels)
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error making upgrade")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
+		s.logger.WithField("cell", req.Cell).Info("Upgrade executed")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
@@ -226,12 +245,14 @@ func (s *apiServer) handleEndTurn() http.HandlerFunc {
 		err := user.endTurn()
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error ending turn")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
 		doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId)
 
+		s.logger.Info("Turn ended")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
@@ -242,10 +263,12 @@ func (s *apiServer) handleGetMap() http.HandlerFunc {
 		user := r.Context().Value(ctxKeyUser).(*User)
 
 		if user.GameBox.Game == nil {
+			s.logger.Error("Game does not exist")
 			s.error(w, r, http.StatusUnprocessableEntity, errGameIsNotExist)
 			return
 		}
 
+		s.logger.Info("Retrieved game map")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }

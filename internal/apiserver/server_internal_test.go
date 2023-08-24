@@ -9,6 +9,7 @@ import (
 
 	"github.com/Vacym/neighbors-force/internal/game"
 	"github.com/gorilla/sessions"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,8 +21,12 @@ var gameCreateValidPayload = map[string]int{
 	"player_id":   0,
 }
 
+func newTestServer() *apiServer {
+	return newServer(sessions.NewCookieStore([]byte("secret")), logrus.DebugLevel)
+}
+
 func TestServer_handleGameCreate(t *testing.T) {
-	s := newServer(sessions.NewCookieStore([]byte("secret")))
+	s := newTestServer()
 
 	testCases := []struct {
 		name         string
@@ -150,7 +155,7 @@ var makeAttackValidPayload = map[string]game.Coords{
 }
 
 func TestServer_handleMakeAttack(t *testing.T) {
-	s := newServer(sessions.NewCookieStore([]byte("secret")))
+	s := newTestServer()
 
 	testCases := []struct {
 		name         string
@@ -223,7 +228,7 @@ func TestServer_handleMakeAttack(t *testing.T) {
 }
 
 func TestServer_handleEndAttack(t *testing.T) {
-	s := newServer(sessions.NewCookieStore([]byte("secret")))
+	s := newTestServer()
 
 	testCases := []struct {
 		name         string
@@ -275,7 +280,7 @@ func TestServer_handleEndAttack(t *testing.T) {
 }
 
 func TestServer_handleUpgrade(t *testing.T) {
-	s := newServer(sessions.NewCookieStore([]byte("secret")))
+	s := newTestServer()
 
 	testCases := []struct {
 		name         string
@@ -363,7 +368,7 @@ func TestServer_handleUpgrade(t *testing.T) {
 }
 
 func TestServer_handleEndTurn(t *testing.T) {
-	s := newServer(sessions.NewCookieStore([]byte("secret")))
+	s := newTestServer()
 
 	testCases := []struct {
 		name         string
@@ -433,7 +438,7 @@ func TestServer_handleEndTurn(t *testing.T) {
 }
 
 func TestServer_handleGetMap(t *testing.T) {
-	s := newServer(sessions.NewCookieStore([]byte("secret")))
+	s := newTestServer()
 
 	testCases := []struct {
 		name         string

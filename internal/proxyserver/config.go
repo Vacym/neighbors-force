@@ -5,6 +5,7 @@ type Config struct {
 	BindAddrApi   string `toml:"bind_addr_api"`
 	BindAddrHtml  string `toml:"bind_addr_html"`
 	SessionKey    string `toml:"session_key"`
+	LogLevel      string `toml:"log_level"`
 }
 
 func NewConfig() *Config {
