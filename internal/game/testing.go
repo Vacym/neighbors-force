@@ -10,14 +10,14 @@ func TestBoard() *Board {
 	return board
 }
 
-func TestPlayer(id int) *Player {
-	player := NewPlayer(id)
+func TestPlayer(id int) Player {
+	player := newPlayer(id)
 	player.points = 20
 	player.cellsCount = 10
 	return player
 }
 
-func TestBoardAttack() (*Board, []player) {
+func TestBoardAttack() (*Board, []Player) {
 	// This method of map creation will only be used until
 	// the implementation of saving custom boards
 	/*
@@ -43,7 +43,7 @@ func TestBoardAttack() (*Board, []player) {
 	board.Cells[0][3] = newCellWithParameters(0, 3, 5, 1, p1)
 	board.Cells[2][1] = newCellWithParameters(2, 1, 1, 3, p2)
 
-	return board, []player{p1, p2}
+	return board, []Player{p1, p2}
 }
 
 func TestGameAttack() (*Game, error) {

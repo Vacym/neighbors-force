@@ -52,3 +52,6 @@
 # Ignore terminal script files
 *.sh
 *.bat
+
+# Include example files
+!*-example.*

@@ -141,11 +141,11 @@ func TestBoardIntegrity_NewRandomBoard(t *testing.T) {
 }
 
 func checkConnectivity(t *testing.T, board game.Board) {
-	visited := make(map[game.CellInterface]bool)
+	visited := make(map[game.Cell]bool)
 	q := queue.New()
 
 	// Find the first non-empty cell on the board and start Breadth-first search from it
-	var startCell game.CellInterface
+	var startCell game.Cell
 	for _, rowOfCells := range board.Cells {
 		for _, cell := range rowOfCells {
 			if cell != nil {
@@ -162,7 +162,7 @@ func checkConnectivity(t *testing.T, board game.Board) {
 	visited[startCell] = true
 
 	for q.Len() > 0 {
-		currCell := q.Dequeue().(game.CellInterface)
+		currCell := q.Dequeue().(game.Cell)
 		neighbors := currCell.GetNeighbors(&board)
 
 		for _, neighbor := range neighbors {

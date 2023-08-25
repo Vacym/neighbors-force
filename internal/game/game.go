@@ -14,60 +14,54 @@ var (
 	errInvalidUpgradingCell = errors.New("upgrading cell is not owned by player")
 )
 
+// Game represents the core structure that encapsulates the state and logic of the game.
+// It holds references to the game board, a list of players, and the current turn's player ID.
 type Game struct {
 	Board   *Board   // Instance of the board
-	Players []player // List of players
+	Players []Player // List of players
 	turn    int      // ID of the player whose turn it is
 }
 
-// Creates a new Game with the random Board with given count of rows and cols and number of players
+// createGame creates a new game with a given board and players.
+func createGame(rows, cols, numPlayers int, seed int64, isFull bool) (*Game, error) {
+	players, err := NewPlayersSlice(numPlayers)
+	if err != nil {
+		return nil, err
+	}
+
+	var board *Board
+	if isFull {
+		board, err = NewBoard(rows, cols)
+	} else {
+		board, err = NewRandomBoard(rows, cols, seed)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	game, err := NewGameWithBoard(board, players)
+	if err != nil {
+		return nil, err
+	}
+
+	game.placePlayers()
+	game.countPlayersCell()
+
+	return game, nil
+}
+
+// NewGame creates a new Game with a random Board and specified number of players.
 func NewGame(rows, cols int, numPlayers int, seed int64) (*Game, error) {
-	players, err := NewPlayersSlice(numPlayers)
-	if err != nil {
-		return nil, err
-	}
-
-	board, err := NewRandomBoard(rows, cols, seed)
-	if err != nil {
-		return nil, err
-	}
-
-	game, err := NewGameWithBoard(board, players)
-	if err != nil {
-		return nil, err
-	}
-
-	game.placePlayers()
-	game.countPlayersCell()
-
-	return game, nil
+	return createGame(rows, cols, numPlayers, seed, false)
 }
 
-// Creates a game with a board filled with cells. Use only in tests
-func NewFullGame(rows, cols int, numPlayers int) (*Game, error) {
-	players, err := NewPlayersSlice(numPlayers)
-	if err != nil {
-		return nil, err
-	}
-
-	board, err := NewBoard(rows, cols)
-	if err != nil {
-		return nil, err
-	}
-
-	game, err := NewGameWithBoard(board, players)
-	if err != nil {
-		return nil, err
-	}
-
-	game.placePlayers()
-	game.countPlayersCell()
-
-	return game, nil
+// NewCompleteBoardGame creates a new Game with a fully filled board (for testing purposes).
+func NewCompleteBoardGame(rows, cols int, numPlayers int) (*Game, error) {
+	return createGame(rows, cols, numPlayers, 0, true)
 }
 
-// Creates a new Game with the given Board and number of players
-func NewGameWithBoard(board *Board, players []player) (*Game, error) {
+// NewGameWithBoard creates a new Game with a given Board and player list.
+func NewGameWithBoard(board *Board, players []Player) (*Game, error) {
 	if len(players) < 2 {
 		return nil, errTooSmallPlayers
 	} else if len(players) > 4 {
@@ -83,32 +77,33 @@ func NewGameWithBoard(board *Board, players []player) (*Game, error) {
 	return game, nil
 }
 
-func NewPlayersSlice(numPlayers int) ([]player, error) {
+// NewPlayersSlice creates a slice of Player instances based on the given number.
+func NewPlayersSlice(numPlayers int) ([]Player, error) {
 	if numPlayers < 0 {
 		return nil, errNegativePlayers
 	}
 
-	players := make([]player, numPlayers)
+	players := make([]Player, numPlayers)
 
 	for i := range players {
-		players[i] = NewPlayer(i)
+		players[i] = newPlayer(i)
 	}
 
 	return players, nil
 }
 
+// Turn returns the ID of the current player's turn.
 func (g *Game) Turn() int {
 	return g.turn
 }
 
-// A method that automatically places players as far apart as possible depending on the board
-// Necessary and can be called only if there are no players on the field
+// placePlayers places players on the board at specific locations.
 func (g *Game) placePlayers() {
 	const startPower = 2
 	const startLevel = 1
 
 	for idx, player := range g.Players {
-		var c cell
+		var c Cell
 		switch idx {
 		case 0:
 			c = findNearestCell(g.Board, 0, 0)
@@ -123,9 +118,8 @@ func (g *Game) placePlayers() {
 	}
 }
 
-// findNearestCell finds the nearest cell to a given row and column coordinates
-// considering the constraints of the board's dimensions.
-func findNearestCell(board *Board, row, col int) cell {
+// findNearestCell finds the nearest cell based on row and column coordinates.
+func findNearestCell(board *Board, row, col int) Cell {
 	// Offset for mirror columns
 	var offset int
 	if col > board.cols/2 {
@@ -135,14 +129,17 @@ func findNearestCell(board *Board, row, col int) cell {
 		}
 	}
 
+	var cell Cell
 	for dist := 0; dist < max(board.cols, board.rows); dist++ {
 		// Search left
-		if col-dist >= 0 && board.Cells[row][col-dist] != nil {
-			return board.Cells[row][col-dist]
+		cell, _ = board.GetCell(Coords{row, col - dist})
+		if cell != nil {
+			return cell
 		}
 		// Search right
-		if col+dist < board.cols-row%2 && board.Cells[row][col+dist] != nil {
-			return board.Cells[row][col+dist]
+		cell, _ = board.GetCell(Coords{row, col + dist})
+		if cell != nil {
+			return cell
 		}
 
 		var locOffset int
@@ -151,17 +148,20 @@ func findNearestCell(board *Board, row, col int) cell {
 		}
 
 		// Search up
-		if row-dist >= 0 && board.Cells[row-dist][col+locOffset] != nil {
-			return board.Cells[row-dist][col+locOffset]
+		cell, _ = board.GetCell(Coords{row - dist, col + locOffset})
+		if cell != nil {
+			return cell
 		}
 		// Search down
-		if row+dist < board.rows && board.Cells[row+dist][col+locOffset] != nil {
-			return board.Cells[row+dist][col+locOffset]
+		cell, _ = board.GetCell(Coords{row + dist, col + locOffset})
+		if cell != nil {
+			return cell
 		}
 	}
 	return nil
 }
 
+// countPlayersCell updates player cell counts on the board.
 func (g *Game) countPlayersCell() {
 	for _, row := range g.Board.Cells {
 		for _, cell := range row {
@@ -172,8 +172,8 @@ func (g *Game) countPlayersCell() {
 	}
 }
 
-// Method for executing a attack in the game
-func (g *Game) Attack(player player, from, to cell) error {
+// Attack performs an attack from one cell to another.
+func (g *Game) Attack(player Player, from, to Cell) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -192,7 +192,8 @@ func (g *Game) Attack(player player, from, to cell) error {
 	return err
 }
 
-func (g *Game) EndAttack(player player) error {
+// EndAttack ends the attack phase for the current player.
+func (g *Game) EndAttack(player Player) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -200,7 +201,8 @@ func (g *Game) EndAttack(player player) error {
 	return player.endAttack()
 }
 
-func (g *Game) Upgrade(player player, target cell, levels int) error {
+// Upgrade upgrades a target cell's level by a specified number of levels.
+func (g *Game) Upgrade(player Player, target Cell, levels int) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -219,8 +221,8 @@ func (g *Game) Upgrade(player player, target cell, levels int) error {
 	return err
 }
 
-// Method for ending a player's turn
-func (g *Game) EndTurn(player player) error {
+// EndTurn ends the current player's turn, updating the board and switching turns.
+func (g *Game) EndTurn(player Player) error {
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -228,12 +230,13 @@ func (g *Game) EndTurn(player player) error {
 
 	g.Board.calculatePower(player)
 
-	g.NextTurn()
+	g.nextTurn()
 
 	return nil
 }
 
-func (g *Game) NextTurn() {
+// nextTurn advances the turn to the next player.
+func (g *Game) nextTurn() {
 	g.turn = (g.turn + 1) % len(g.Players)
 }
 
@@ -245,26 +248,11 @@ func (g *Game) ToMap() map[string]interface{} {
 	}
 }
 
-func toPlayerInterfaceSlice(players []player) []interface{} {
+// ToMap converts the game state into a map for serialization.
+func toPlayerInterfaceSlice(players []Player) []interface{} {
 	result := make([]interface{}, len(players))
 	for i, p := range players {
 		result[i] = p.toMap()
 	}
 	return result
-}
-
-func min(x, y int) int {
-	// Delete after Go 1.21 (Q3 2023)
-	if x < y {
-		return x
-	}
-	return y
-}
-
-func max(x, y int) int {
-	// Delete after Go 1.21 (Q3 2023)
-	if x > y {
-		return x
-	}
-	return y
 }

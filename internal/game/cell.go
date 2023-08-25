@@ -2,7 +2,6 @@ package game
 
 import (
 	"errors"
-	"math"
 )
 
 var (
@@ -11,66 +10,98 @@ var (
 	errIsNotNeighbor  = errors.New("cell can attack only it's neighbor")
 )
 
+// Coords represents row and column indices of a cell.
 type Coords struct {
 	Row int `json:"row"` // Row of the cell
 	Col int `json:"col"` // Column of the cell
 }
 
-type cell interface {
+// Cell represents a hexagonal cell on the game board.
+type Cell interface {
+	// Level returns the level of the cell.
 	Level() int
+
+	// Power returns the power of the cell.
 	Power() int
-	Owner() player
+
+	// Owner returns the player who owns the cell.
+	Owner() Player
+
+	// Row returns the row index of the cell.
 	Row() int
+
+	// Col returns the column index of the cell.
 	Col() int
 
-	attack(target cell) error
-	upgrade(points int) error
-	calculatePower(*Board)
+	//Coords returns the coords of the cell.
+	Coords() Coords
 
-	GetNeighbors(*Board) []cell
+	// Attack performs an attack on a target cell.
+	attack(target Cell) error
 
+	// Upgrade increases the level of the cell by a specified number of levels.
+	upgrade(levels int) error
+
+	// CalculatePower calculates the power of the cell considering its neighbors.
+	calculatePower(board *Board)
+
+	// GetNeighbors returns the neighboring cells of the cell on the board.
+	GetNeighbors(board *Board) []Cell
+
+	// ToMap converts the cell's information into a map for serialization.
 	toMap() map[string]interface{}
 }
 
-type CellInterface = cell
-
-type Cell struct {
+// cell implements the Cell interface.
+type cell struct {
 	coords Coords
 	level  int    // Level of cell
 	power  int    // Power of cell
-	owner  player // Pointer of the player who owns the cell, nil if the cell is unoccupied
+	owner  Player // Pointer of the player who owns the cell, nil if the cell is unoccupied
 }
 
-func (c Cell) Level() int {
+// Level returns the level of the cell.
+func (c cell) Level() int {
 	return c.level
 }
 
-func (c Cell) Power() int {
+// Power returns the power of the cell.
+func (c cell) Power() int {
 	return c.power
 }
 
-func (c Cell) Owner() player {
+// Owner returns the player who owns the cell.
+func (c cell) Owner() Player {
 	return c.owner
 }
 
-func (c Cell) Row() int {
+// Row returns the row index of the cell.
+func (c cell) Row() int {
 	return c.coords.Row
 }
 
-func (c Cell) Col() int {
+// Col returns the column index of the cell.
+func (c cell) Col() int {
 	return c.coords.Col
 }
 
-func newCell(row, col int) *Cell {
-	return &Cell{
+// Coords returns the coords of the cell.
+func (c cell) Coords() Coords {
+	return c.coords
+}
+
+// newCell creates a new cell with default parameters.
+func newCell(row, col int) *cell {
+	return &cell{
 		coords: Coords{row, col},
 		power:  1,
 		level:  1,
 	}
 }
 
-func newCellWithParameters(row, col int, level, power int, owner player) *Cell {
-	return &Cell{
+// newCellWithParameters creates a new cell with specified parameters.
+func newCellWithParameters(row, col int, level, power int, owner Player) *cell {
+	return &cell{
 		coords: Coords{row, col},
 		level:  level,
 		power:  power,
@@ -78,14 +109,14 @@ func newCellWithParameters(row, col int, level, power int, owner player) *Cell {
 	}
 }
 
-// Returns neighbors of the cell
-func (c Cell) GetNeighbors(board *Board) []cell {
-	neighbors := make([]cell, 0, 6)
+// GetNeighbors returns the neighboring cells of the cell on the board.
+func (c cell) GetNeighbors(board *Board) []Cell {
+	neighbors := make([]Cell, 0, 6)
 
-	neighborCoords := getNeighborCoords(c.Row(), c.Col(), board.Rows(), board.Cols())
+	neighborCoords := GetNeighborCoords(c.Coords(), board.Rows(), board.Cols())
 
 	for _, coord := range neighborCoords {
-		if board.Cells[coord.Row][coord.Col] != nil {
+		if board.HasCellAt(coord) {
 			neighbors = append(neighbors, board.Cells[coord.Row][coord.Col])
 		}
 	}
@@ -93,9 +124,9 @@ func (c Cell) GetNeighbors(board *Board) []cell {
 	return neighbors
 }
 
-// Attacks target cell and defines new owner of target
-func (c *Cell) attack(targetInterface cell) error {
-	target := targetInterface.(*Cell)
+// attack performs an attack on a target cell.
+func (c *cell) attack(targetInterface Cell) error {
+	target := targetInterface.(*cell)
 	if c.owner == target.owner {
 		return errSamePlayerCell
 	}
@@ -116,7 +147,8 @@ func (c *Cell) attack(targetInterface cell) error {
 	return nil
 }
 
-func (c *Cell) handleAttack(attacker cell) error {
+// handleAttack updates the cell after an attack.
+func (c *cell) handleAttack(attacker Cell) error {
 	attackPower := attacker.Power()
 	c.power -= attackPower
 
@@ -134,7 +166,8 @@ func (c *Cell) handleAttack(attacker cell) error {
 	return nil
 }
 
-func (c *Cell) calculatePower(board *Board) {
+// calculatePower calculates the power of the cell considering its neighbors.
+func (c *cell) calculatePower(board *Board) {
 	if c.owner == nil {
 		return
 	}
@@ -150,52 +183,20 @@ func (c *Cell) calculatePower(board *Board) {
 	c.power = newPower
 }
 
-func (c *Cell) upgrade(levels int) error {
+// upgrade increases the level of the cell by a specified number of levels.
+func (c *cell) upgrade(levels int) error {
 	c.level += levels
 
 	return nil
 }
 
-func getNeighborCoords(row, col, boardRow, boardCol int) []Coords {
-	// Offset is necessary because the hexagonal cells
-	// are not placed under each other.
-	// The offset depends on the row number.
-	offset := row % 2
-	neighborsRelative := [6]Coords{
-		{-1, offset - 1}, // up-left
-		{-1, offset - 0}, // up-right
-		{+1, offset - 1}, // down-left
-		{+1, offset - 0}, // down-right
-		{0, -1},          // left
-		{0, +1},          // right
-	}
-
-	neighborCoords := make([]Coords, 0, 6)
-
-	for _, relative := range neighborsRelative {
-		neighborRow := row + relative.Row
-		neighborCol := col + relative.Col
-		if neighborRow >= 0 && neighborCol >= 0 && neighborRow < boardRow && neighborCol < boardCol-neighborRow%2 {
-			neighborCoords = append(neighborCoords, Coords{neighborRow, neighborCol})
-		}
-	}
-
-	return neighborCoords
+// isNeighbor checks if a given cell is a neighbor of the current cell.
+func (c *cell) isNeighbor(cell2 Cell) bool {
+	return IsNeighborCoords(c.Coords(), cell2.Coords())
 }
 
-func (c *Cell) isNeighbor(cell2 *Cell) bool {
-	cell1 := c
-	if cell1.Row() == cell2.Row() && math.Abs(float64(cell1.Col()-cell2.Col())) == 1 {
-		return true
-	} else if math.Abs(float64(cell1.Row()-cell2.Row())) == 1 {
-		offset := cell1.Row() % 2
-		return cell1.Col()-cell2.Col() == 0-offset || cell1.Col()-cell2.Col() == 1-offset
-	} else {
-		return false
-	}
-}
-
-func (c *Cell) toMap() map[string]interface{} {
+// toMap converts the cell's information into a map for serialization.
+func (c *cell) toMap() map[string]interface{} {
 	result := map[string]interface{}{
 		"level": c.level,
 		"power": c.power,

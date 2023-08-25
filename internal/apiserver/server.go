@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 
 	"github.com/Vacym/neighbors-force/internal/bot"
@@ -12,12 +11,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
+	"github.com/sirupsen/logrus"
 )
 
+// Error definition for incorrect player ID.
 var (
 	errIncorrectPlayerId = errors.New("incorrect player_id")
 )
 
+// Key type for context value.
 type key int
 
 const (
@@ -25,34 +27,44 @@ const (
 	ctxKeyUser  key = iota
 )
 
+// apiServer handles API requests.
 type apiServer struct {
 	router       *mux.Router
-	testRouter   *mux.Router // Отдельный роутер для тестовых хендлеров
+	testRouter   *mux.Router // Separate router for test handlers
 	sessionStore sessions.Store
 	activeUsers  map[string]*User
+	logger       *logrus.Logger
 }
 
-func newServer(sessionStore sessions.Store) *apiServer {
+// newServer creates a new instance of apiServer.
+func newServer(sessionStore sessions.Store, logLevel logrus.Level) *apiServer {
 	s := &apiServer{
 		router:       mux.NewRouter(),
 		testRouter:   mux.NewRouter(),
 		sessionStore: sessionStore,
 		activeUsers:  make(map[string]*User),
+		logger:       logrus.New(),
 	}
 
+	s.logger.SetLevel(logLevel)
 	s.configureRouter()
+
+	s.logger.Info("API server initialized")
 
 	return s
 }
 
+// ServeHTTP implements the http.Handler interface.
 func (s *apiServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(w, r)
 }
 
+// ServeTestHTTP serves requests for testing.
 func (s *apiServer) ServeTestHTTP(w http.ResponseWriter, r *http.Request) {
 	s.testRouter.ServeHTTP(w, r)
 }
 
+// configureRouter configures the API routes.
 func (s *apiServer) configureRouter() {
 	s.router.Use(s.UserMiddleware)
 	s.router.HandleFunc("/game/create", s.handleCreateGame()).Methods("POST")
@@ -60,18 +72,19 @@ func (s *apiServer) configureRouter() {
 	s.router.HandleFunc("/game/end_attack", s.handleEndAttack()).Methods("POST")
 	s.router.HandleFunc("/game/upgrade", s.handleMakeUpgrade()).Methods("POST")
 	s.router.HandleFunc("/game/end_turn", s.handleEndTurn()).Methods("POST")
-
 	s.router.HandleFunc("/game/get_map", s.handleGetMap()).Methods("GET")
 
-	// Add a test handler, which is only used in tests.
+	// Add a test handler, used only in tests.
 	s.testRouter.Use(s.UserMiddleware)
 	s.testRouter.HandleFunc("/test/create_full", s.CreateFullGame()).Methods("POST")
 }
 
+// UserMiddleware is a middleware that handles user-related tasks.
 func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, err := s.sessionStore.Get(r, sessionName)
 		if err != nil {
+			s.logger.WithError(err).Error("Error getting session")
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
 		}
@@ -85,17 +98,18 @@ func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 
 		user, ok := s.activeUsers[userID]
 		if !ok {
-			fmt.Println("create new user")
+			s.logger.Info("Creating new user")
 			user = NewUser()
 			s.activeUsers[userID] = user
 		}
 
 		ctx := context.WithValue(r.Context(), ctxKeyUser, user)
-		fmt.Println("add user to context")
+		s.logger.WithField("user_id", userID).Debug("Adding user to context")
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
+// handleCreateGame handles the creation of a new game.
 func (s *apiServer) handleCreateGame() http.HandlerFunc {
 	type request struct {
 		Rows       int `json:"rows"`
@@ -104,18 +118,17 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		PlayerId   int `json:"player_id"`
 	}
 
-	fmt.Println("logging")
-
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Body)
 		req := &request{}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.logger.WithError(err).Error("Error decoding request")
 			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
 
 		if req.PlayerId < 0 || req.PlayerId >= req.NumPlayers {
+			s.logger.WithField("player_id", req.PlayerId).Error("Incorrect player ID")
 			s.error(w, r, http.StatusUnprocessableEntity, errIncorrectPlayerId)
 			return
 		}
@@ -123,6 +136,7 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		g, err := game.NewGame(req.Rows, req.Cols, req.NumPlayers, 0)
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error creating new game")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
@@ -130,10 +144,15 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		user := r.Context().Value(ctxKeyUser).(*User)
 		user.createGame(g, req.PlayerId)
 
+		s.logger.WithFields(logrus.Fields{
+			"cols": g.Board.Cols(),
+			"rows": g.Board.Rows(),
+		}).Info("New game")
 		s.respond(w, r, http.StatusCreated, g.ToMap())
 	}
 }
 
+// handleMakeAttack handles the attack action.
 func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 	type request struct {
 		From struct {
@@ -147,10 +166,10 @@ func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Body)
 		req := &request{}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.logger.WithError(err).Error("Error decoding request")
 			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
@@ -159,29 +178,37 @@ func (s *apiServer) handleMakeAttack() http.HandlerFunc {
 		err := user.attack(game.Coords(req.From), game.Coords(req.To))
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error handling attack")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
+		s.logger.WithFields(logrus.Fields{
+			"from": req.From,
+			"to":   req.To,
+		}).Info("Attack executed")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
 
+// handleEndAttack handles ending the attack phase.
 func (s *apiServer) handleEndAttack() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		user := r.Context().Value(ctxKeyUser).(*User)
 		err := user.endAttack()
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error ending attack")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
+		s.logger.Info("Attack phase ended")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
 
+// handleMakeUpgrade handles the cell upgrade action.
 func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
 	type request struct {
 		Cell   game.Coords `json:"cell"`
@@ -189,10 +216,10 @@ func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println(r.Body)
 		req := &request{}
 
 		if err := json.NewDecoder(r.Body).Decode(req); err != nil {
+			s.logger.WithError(err).Error("Error decoding request")
 			s.error(w, r, http.StatusBadRequest, err)
 			return
 		}
@@ -201,48 +228,52 @@ func (s *apiServer) handleMakeUpgrade() http.HandlerFunc {
 		err := user.makeUpgrade(req.Cell, req.Levels)
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error making upgrade")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
+		s.logger.WithField("cell", req.Cell).Info("Upgrade executed")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
 
+// handleEndTurn handles ending the current turn.
 func (s *apiServer) handleEndTurn() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		user := r.Context().Value(ctxKeyUser).(*User)
 		err := user.endTurn()
 
 		if err != nil {
+			s.logger.WithError(err).Error("Error ending turn")
 			s.error(w, r, http.StatusUnprocessableEntity, err)
 			return
 		}
 
-		// bot.DoTurn(user.GameBox.Game, user.me().(*game.Player))
-
 		doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId)
 
+		s.logger.Info("Turn ended")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
 
+// handleGetMap handles retrieving the game map.
 func (s *apiServer) handleGetMap() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-
 		user := r.Context().Value(ctxKeyUser).(*User)
 
 		if user.GameBox.Game == nil {
+			s.logger.Error("Game does not exist")
 			s.error(w, r, http.StatusUnprocessableEntity, errGameIsNotExist)
 			return
 		}
 
+		s.logger.Info("Retrieved game map")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
 	}
 }
 
-// Endpoint imitation for tests
+// CreateFullGame is an endpoint imitation for tests.
 func (s *apiServer) CreateFullGame() http.HandlerFunc {
 	type request struct {
 		Rows       int `json:"rows"`
@@ -264,7 +295,7 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 			return
 		}
 
-		g, err := game.NewFullGame(req.Rows, req.Cols, req.NumPlayers)
+		g, err := game.NewCompleteBoardGame(req.Rows, req.Cols, req.NumPlayers)
 
 		if err != nil {
 			s.error(w, r, http.StatusUnprocessableEntity, err)
@@ -278,19 +309,22 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 	}
 }
 
+// doAllBotsTurns performs the turns for all AI players.
 func doAllBotsTurns(g *game.Game, playerId int) {
 	for g.Turn() != playerId {
-		bot.DoTurn(g, g.Players[g.Turn()].(*game.Player))
-		bot.DoUpgrade(g, g.Players[g.Turn()].(*game.Player))
+		bot.DoTurn(g, g.Players[g.Turn()])
+		bot.DoUpgrade(g, g.Players[g.Turn()])
 	}
 }
 
+// error responds with an error message.
 func (s *apiServer) error(w http.ResponseWriter, r *http.Request, code int, err error) {
 	s.respond(w, r, code, map[string]string{
 		"error": err.Error(),
 	})
 }
 
+// respond writes a response to the client.
 func (s *apiServer) respond(w http.ResponseWriter, r *http.Request, code int, data any) {
 	w.WriteHeader(code)
 
