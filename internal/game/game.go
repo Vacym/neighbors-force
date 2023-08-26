@@ -313,9 +313,10 @@ func (g *Game) finish(winnerId int) {
 
 func (g *Game) ToMap() map[string]interface{} {
 	return map[string]interface{}{
-		"board":   g.Board.toMap(),
-		"players": toPlayerInterfaceSlice(g.Players),
-		"turn":    g.turn,
+		"board":     g.Board.toMap(),
+		"players":   toPlayerInterfaceSlice(g.Players),
+		"turn":      g.turn,
+		"winner_id": g.winnerId,
 	}
 }
 
