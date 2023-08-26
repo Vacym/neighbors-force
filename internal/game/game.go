@@ -12,14 +12,16 @@ var (
 	errNilPointer           = errors.New("nil pointer error")
 	errInvalidAttackingCell = errors.New("attacking cell is not owned by attacking player")
 	errInvalidUpgradingCell = errors.New("upgrading cell is not owned by player")
+	errGameAlreadyFinished  = errors.New("the game has already finished")
 )
 
 // Game represents the core structure that encapsulates the state and logic of the game.
 // It holds references to the game board, a list of players, and the current turn's player ID.
 type Game struct {
-	Board   *Board   // Instance of the board
-	Players []Player // List of players
-	turn    int      // ID of the player whose turn it is
+	Board    *Board   // Instance of the board
+	Players  []Player // List of players
+	turn     int      // ID of the player whose turn it is
+	winnerId int      // ID of the player who winned, -1 if the game is still on
 }
 
 // createGame creates a new game with a given board and players.
@@ -69,9 +71,10 @@ func NewGameWithBoard(board *Board, players []Player) (*Game, error) {
 	}
 
 	game := &Game{
-		Board:   board,
-		Players: players,
-		turn:    0,
+		Board:    board,
+		Players:  players,
+		turn:     0,
+		winnerId: -1,
 	}
 
 	return game, nil
@@ -95,6 +98,18 @@ func NewPlayersSlice(numPlayers int) ([]Player, error) {
 // Turn returns the ID of the current player's turn.
 func (g *Game) Turn() int {
 	return g.turn
+}
+
+func (g *Game) IsFinished() bool {
+	return g.winnerId != -1
+}
+
+func (g *Game) Winner() Player {
+	if g.IsFinished() {
+		return g.Players[g.winnerId]
+	} else {
+		return nil
+	}
 }
 
 // placePlayers places players on the board at specific locations.
@@ -174,6 +189,9 @@ func (g *Game) countPlayersCell() {
 
 // Attack performs an attack from one cell to another.
 func (g *Game) Attack(player Player, from, to Cell) error {
+	if g.IsFinished() {
+		return errGameAlreadyFinished
+	}
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -187,13 +205,21 @@ func (g *Game) Attack(player Player, from, to Cell) error {
 		return err
 	}
 
-	err := from.attack(to)
+	lastCellDestroyed, err := from.attack(to)
+	if lastCellDestroyed {
+		if lastPlayerId := g.findLastPlayerWithCells(); lastPlayerId != -1 {
+			g.finish(lastPlayerId)
+		}
+	}
 
 	return err
 }
 
 // EndAttack ends the attack phase for the current player.
 func (g *Game) EndAttack(player Player) error {
+	if g.IsFinished() {
+		return errGameAlreadyFinished
+	}
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -203,6 +229,9 @@ func (g *Game) EndAttack(player Player) error {
 
 // Upgrade upgrades a target cell's level by a specified number of levels.
 func (g *Game) Upgrade(player Player, target Cell, levels int) error {
+	if g.IsFinished() {
+		return errGameAlreadyFinished
+	}
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -223,6 +252,9 @@ func (g *Game) Upgrade(player Player, target Cell, levels int) error {
 
 // EndTurn ends the current player's turn, updating the board and switching turns.
 func (g *Game) EndTurn(player Player) error {
+	if g.IsFinished() {
+		return errGameAlreadyFinished
+	}
 	if player.Id() != g.turn {
 		return errNotPlayerTurn
 	}
@@ -235,9 +267,48 @@ func (g *Game) EndTurn(player Player) error {
 	return nil
 }
 
-// nextTurn advances the turn to the next player.
+// nextTurn advances the turn to the next player with CellsCount != 1.
 func (g *Game) nextTurn() {
-	g.turn = (g.turn + 1) % len(g.Players)
+	currentPlayerIndex := g.turn
+	nextPlayerIndex := (currentPlayerIndex + 1) % len(g.Players)
+	foundPlayerIndex := -1
+
+	// Iterate through the players to find the next suitable player.
+	for nextPlayerIndex != currentPlayerIndex {
+		if g.Players[nextPlayerIndex].CellsCount() != 0 {
+			foundPlayerIndex = nextPlayerIndex
+			break
+		}
+		nextPlayerIndex = (nextPlayerIndex + 1) % len(g.Players)
+	}
+
+	if foundPlayerIndex != -1 {
+		g.turn = foundPlayerIndex
+	} else {
+		// No other player found with non-zero CellsCount, finish the game.
+		g.finish(g.turn)
+	}
+}
+
+func (g *Game) findLastPlayerWithCells() int {
+	activePlayerCount := 0
+	lastActivePlayerIndex := -1
+
+	for i, player := range g.Players {
+		if player.CellsCount() > 0 {
+			activePlayerCount++
+			lastActivePlayerIndex = i
+		}
+	}
+
+	if activePlayerCount == 1 {
+		return lastActivePlayerIndex
+	}
+	return -1
+}
+
+func (g *Game) finish(winnerId int) {
+	g.winnerId = winnerId
 }
 
 func (g *Game) ToMap() map[string]interface{} {

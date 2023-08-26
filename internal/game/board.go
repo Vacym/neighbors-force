@@ -77,7 +77,7 @@ func (b *Board) calculatePower(player Player) {
 
 // IsInsideBoard checks if the given coordinates are inside the boundaries of the board.
 func (b *Board) IsInsideBoard(coords Coords) bool {
-	if coords.Row < 0 || coords.Col < 0 || coords.Row >= b.rows || coords.Col >= b.cols {
+	if coords.Row < 0 || coords.Col < 0 || coords.Row >= b.rows || coords.Col >= b.cols-coords.Row%2 {
 		return false
 	}
 	return true

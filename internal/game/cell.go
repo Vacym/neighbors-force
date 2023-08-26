@@ -33,11 +33,12 @@ type Cell interface {
 	// Col returns the column index of the cell.
 	Col() int
 
-	//Coords returns the coords of the cell.
+	// Coords returns the coords of the cell.
 	Coords() Coords
 
 	// Attack performs an attack on a target cell.
-	attack(target Cell) error
+	// It returns true if the player's last cell was destroyed, otherwise false.
+	attack(target Cell) (bool, error)
 
 	// Upgrade increases the level of the cell by a specified number of levels.
 	upgrade(levels int) error
@@ -125,36 +126,37 @@ func (c cell) GetNeighbors(board *Board) []Cell {
 }
 
 // attack performs an attack on a target cell.
-func (c *cell) attack(targetInterface Cell) error {
+// It returns true if the player's last cell was destroyed, otherwise false.
+func (c *cell) attack(targetInterface Cell) (bool, error) {
 	target := targetInterface.(*cell)
 	if c.owner == target.owner {
-		return errSamePlayerCell
+		return false, errSamePlayerCell
 	}
 	if c.power <= 1 {
-		return errNotEnoughPower
+		return false, errNotEnoughPower
 	}
 	if !c.isNeighbor(target) {
-		return errIsNotNeighbor
+		return false, errIsNotNeighbor
 	}
 
-	err := target.handleAttack(c)
-	if err != nil {
-		return err
-	}
+	lastCellDestroyed := target.handleAttack(c)
 
 	c.power = 1
 
-	return nil
+	return lastCellDestroyed, nil
 }
 
 // handleAttack updates the cell after an attack.
-func (c *cell) handleAttack(attacker Cell) error {
+// It returns true if the player's last cell was destroyed, otherwise false.
+func (c *cell) handleAttack(attacker Cell) bool {
 	attackPower := attacker.Power()
 	c.power -= attackPower
 
+	lastCellDestroyed := false
+
 	if c.power < 0 {
 		if c.Owner() != nil {
-			c.Owner().deleteCell()
+			lastCellDestroyed = c.Owner().deleteCell()
 		}
 		attacker.Owner().addCell()
 
@@ -163,7 +165,7 @@ func (c *cell) handleAttack(attacker Cell) error {
 		c.level = 1
 	}
 
-	return nil
+	return lastCellDestroyed
 }
 
 // calculatePower calculates the power of the cell considering its neighbors.
