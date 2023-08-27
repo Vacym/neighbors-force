@@ -18,10 +18,12 @@ var (
 // Game represents the core structure that encapsulates the state and logic of the game.
 // It holds references to the game board, a list of players, and the current turn's player ID.
 type Game struct {
-	Board    *Board   // Instance of the board
-	Players  []Player // List of players
-	turn     int      // ID of the player whose turn it is
-	winnerId int      // ID of the player who winned, -1 if the game is still on
+	Board      *Board   // Instance of the board
+	Players    []Player // List of players
+	turn       int      // ID of the player whose turn it is
+	winnerId   int      // ID of the player who winned, -1 if the game is still on
+	turnsLimit int      // Max count of turns in game
+	turnsCount int      // Current count of turns
 }
 
 // createGame creates a new game with a given board and players.
@@ -71,10 +73,11 @@ func NewGameWithBoard(board *Board, players []Player) (*Game, error) {
 	}
 
 	game := &Game{
-		Board:    board,
-		Players:  players,
-		turn:     0,
-		winnerId: -1,
+		Board:      board,
+		Players:    players,
+		turn:       0,
+		winnerId:   -1,
+		turnsLimit: board.cols * board.rows,
 	}
 
 	return game, nil
@@ -275,6 +278,14 @@ func (g *Game) nextTurn() {
 
 	// Iterate through the players to find the next suitable player.
 	for nextPlayerIndex != currentPlayerIndex {
+		if nextPlayerIndex == 0 {
+			g.turnsCount++
+			if g.turnsCount >= g.turnsLimit {
+				g.finish(g.findPlayerWithMaxCells())
+				return
+			}
+		}
+
 		if g.Players[nextPlayerIndex].CellsCount() != 0 {
 			foundPlayerIndex = nextPlayerIndex
 			break
@@ -290,6 +301,7 @@ func (g *Game) nextTurn() {
 	}
 }
 
+// findLastPlayerWithCells returns the id of the player with cells if he is alone, otherwise -1
 func (g *Game) findLastPlayerWithCells() int {
 	activePlayerCount := 0
 	lastActivePlayerIndex := -1
@@ -305,6 +317,20 @@ func (g *Game) findLastPlayerWithCells() int {
 		return lastActivePlayerIndex
 	}
 	return -1
+}
+
+// findPlayerWithMaxCells returns the id of the player with the maximum number of cells
+func (g *Game) findPlayerWithMaxCells() int {
+	maxCells := 0
+	playerId := -1
+
+	for i, player := range g.Players {
+		if player.CellsCount() >= maxCells {
+			playerId = i
+		}
+	}
+
+	return playerId
 }
 
 func (g *Game) finish(winnerId int) {
