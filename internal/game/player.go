@@ -17,6 +17,9 @@ type Player interface {
 	// Points returns the points of the player.
 	Points() int
 
+	// CellsCount returns number of cells owned by the player
+	CellsCount() int
+
 	// attack initiates an attack for the player's turn.
 	attack() error
 
@@ -33,7 +36,8 @@ type Player interface {
 	addCell()
 
 	// deleteCell decrements the player's cell count.
-	deleteCell()
+	// It returns true if there are still cells and the player remaining, otherwise false.
+	deleteCell() bool
 
 	// toMap converts the player's information into a map for serialization.
 	toMap() map[string]interface{}
@@ -63,6 +67,11 @@ func (p *player) Id() int {
 // Points returns the points of the player.
 func (p *player) Points() int {
 	return p.points
+}
+
+// CellsCount returns number of cells owned by the player
+func (p *player) CellsCount() int {
+	return p.cellsCount
 }
 
 // attack performs an attack for the player.
@@ -123,10 +132,10 @@ func (p *player) addCell() {
 }
 
 // deleteCell decrements the count of cells owned by the player.
-func (p *player) deleteCell() {
+//It returns true if no cells remain and the player has no cells, otherwise false.
+func (p *player) deleteCell() bool {
 	p.cellsCount--
-
-	// TODO: Realize loosing
+	return p.cellsCount == 0
 }
 
 // toMap converts the player's information into a map for serialization.

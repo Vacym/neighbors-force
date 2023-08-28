@@ -311,7 +311,7 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 
 // doAllBotsTurns performs the turns for all AI players.
 func doAllBotsTurns(g *game.Game, playerId int) {
-	for g.Turn() != playerId {
+	for g.Turn() != playerId && g.Players[playerId].CellsCount() != 0 {
 		bot.DoTurn(g, g.Players[g.Turn()])
 		bot.DoUpgrade(g, g.Players[g.Turn()])
 	}
