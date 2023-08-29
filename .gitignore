@@ -55,3 +55,6 @@
 
 # Include example files
 !*-example.*
+
+# Pycache folder
+__pycache__/
