@@ -1,0 +1,2 @@
+go run ./cmd/proxyserver/main.go
+uvicorn main:app --port 8000
