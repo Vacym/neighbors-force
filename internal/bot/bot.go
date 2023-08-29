@@ -17,7 +17,6 @@ type BotAction struct {
 }
 
 func DoTurn(g *game.Game, player game.Player) error {
-	// return DoTurnVanilla(g, player)
 	for !g.IsFinished() {
 		body, err := getJSONResponse(g, "/ai_attack")
 		if err != nil {
@@ -28,7 +27,7 @@ func DoTurn(g *game.Game, player game.Player) error {
 
 		fmt.Println("Attack Response body:", string(body))
 
-		// Чтение и размаршалирование JSON-ответа
+		// Reading and unmarshaling JSON response
 		var action BotAction
 		err = json.Unmarshal(body, &action)
 		if err != nil {
@@ -37,7 +36,7 @@ func DoTurn(g *game.Game, player game.Player) error {
 			return err
 		}
 
-		// Если бот вернул None (пропустил ход)
+		// If the bot returns None (skips the turn)
 		if action.Attack == nil {
 			g.EndAttack(player)
 			return fmt.Errorf("no cells found for player %v", player.Id())
@@ -55,7 +54,6 @@ func DoTurn(g *game.Game, player game.Player) error {
 }
 
 func DoUpgrade(g *game.Game, player game.Player) error {
-	// return DoUpgradeVanilla(g, player)
 	for {
 		body, err := getJSONResponse(g, "/ai_upgrade")
 		if err != nil {
@@ -122,7 +120,7 @@ func getJSONResponse(g *game.Game, path string) ([]byte, error) {
 }
 
 func DoTurnVanilla(g *game.Game, player game.Player) error {
-	// temporary implementation
+	// Temporary implementation
 	for _, row := range g.Board.Cells {
 		for _, cell := range row {
 			if cell == nil {
