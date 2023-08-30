@@ -1,0 +1,127 @@
+body {
+    background-color: black;
+}
+
+#game-form {
+    font-family: Arial, sans-serif;
+    color: white;
+    max-width: 400px;
+    padding: 20px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input[type="number"],
+input[type="range"] {
+    width: 100%;
+    padding: 5px;
+    margin-bottom: 10px;
+    background-color: #333;
+    border: none;
+    border-radius: 5px;
+    color: white;
+}
+
+input[type="range"] {
+    appearance: none;
+    width: 100%;
+    height: 10px;
+    background: #333;
+    border-radius: 5px;
+    outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+#bot_levels {
+    margin-top: 10px;
+}
+
+#bot_levels > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+}
+
+.form_radio_btn {
+    display: flex;
+    width: 90px;
+    margin-right: 10px;
+}
+
+.form_radio_btn label {
+    display: inline-block;
+    width: 100%;
+    padding: 8px 15px;
+    text-align: center;
+    background-color: #333;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.form_radio_btn input[type="radio"]:checked + label {
+    background-color: #555;
+}
+
+#bot_level_1 .form_radio_btn label {
+    background-color: #4E7810;
+}
+
+#bot_level_1 .form_radio_btn input[type="radio"]:checked + label {
+    background-color: #7DC019;
+}
+
+#bot_level_2 .form_radio_btn label {
+    background-color: #7F5200;
+}
+
+#bot_level_2 .form_radio_btn input[type="radio"]:checked + label {
+    background-color: #CC8400;
+}
+
+#bot_level_3 .form_radio_btn label {
+    background-color: #7F345A;
+}
+
+#bot_level_3 .form_radio_btn input[type="radio"]:checked + label {
+    background-color: #CC5490;
+}
+
+.form_radio_btn input[type="radio"] {
+    display: none;
+}
+
+button[type="submit"] {
+    display: block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+.container_number_players {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.number_players {
+    margin-left: 12px;
+    margin-right: 8px;
+}

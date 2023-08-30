@@ -116,6 +116,9 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		Cols       int `json:"cols"`
 		NumPlayers int `json:"num_players"`
 		PlayerId   int `json:"player_id"`
+		botLevel1  int `json:"bot_level_1"`
+		botLevel2  int `json:"bot_level_2"`
+		botLevel3  int `json:"bot_level_3"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
