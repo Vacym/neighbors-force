@@ -112,13 +112,11 @@ func (s *apiServer) UserMiddleware(next http.Handler) http.Handler {
 // handleCreateGame handles the creation of a new game.
 func (s *apiServer) handleCreateGame() http.HandlerFunc {
 	type request struct {
-		Rows       int `json:"rows"`
-		Cols       int `json:"cols"`
-		NumPlayers int `json:"num_players"`
-		PlayerId   int `json:"player_id"`
-		botLevel1  int `json:"bot_level_1"`
-		botLevel2  int `json:"bot_level_2"`
-		botLevel3  int `json:"bot_level_3"`
+		Rows       int   `json:"rows"`
+		Cols       int   `json:"cols"`
+		NumPlayers int   `json:"num_players"`
+		PlayerId   int   `json:"player_id"`
+		BotLevels  []int `json:"bot_levels"`
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -145,7 +143,7 @@ func (s *apiServer) handleCreateGame() http.HandlerFunc {
 		}
 
 		user := r.Context().Value(ctxKeyUser).(*User)
-		user.createGame(g, req.PlayerId)
+		user.createGame(g, req.PlayerId, req.BotLevels)
 
 		s.logger.WithFields(logrus.Fields{
 			"cols": g.Board.Cols(),
@@ -253,7 +251,10 @@ func (s *apiServer) handleEndTurn() http.HandlerFunc {
 			return
 		}
 
-		doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId)
+		err = doAllBotsTurns(user.GameBox.Game, user.GameBox.UserId, user.GameBox.difficulties)
+		if err != nil {
+			s.logger.WithError(err).Error("Error bot turns")
+		}
 
 		s.logger.Info("Turn ended")
 		s.respond(w, r, http.StatusOK, user.GameBox.Game.ToMap())
@@ -306,18 +307,32 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 		}
 
 		user := r.Context().Value(ctxKeyUser).(*User)
-		user.createGame(g, req.PlayerId)
+		user.createGame(g, req.PlayerId, []int{})
 
 		s.respond(w, r, http.StatusCreated, g.ToMap())
 	}
 }
 
 // doAllBotsTurns performs the turns for all AI players.
-func doAllBotsTurns(g *game.Game, playerId int) {
+func doAllBotsTurns(g *game.Game, playerId int, difficulties []int) error {
+	var err error
+
 	for g.Turn() != playerId && g.Players[playerId].CellsCount() != 0 {
-		bot.DoTurn(g, g.Players[g.Turn()])
-		bot.DoUpgrade(g, g.Players[g.Turn()])
+		if g.Turn() >= len(difficulties) {
+			return errIncorrectDifficultiesLen
+		}
+
+		attackErr := bot.DoAttack(g, g.Players[g.Turn()], difficulties[g.Turn()])
+		if attackErr != nil {
+			err = attackErr
+		}
+
+		upgradeErr := bot.DoUpgrade(g, g.Players[g.Turn()], difficulties[g.Turn()])
+		if upgradeErr != nil && err == nil {
+			err = upgradeErr
+		}
 	}
+	return err
 }
 
 // error responds with an error message.

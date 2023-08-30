@@ -3,6 +3,7 @@ package bot
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand"
@@ -11,16 +12,49 @@ import (
 	"github.com/Vacym/neighbors-force/internal/game"
 )
 
+var (
+	errIncorrectDifficulty = errors.New("incorrect difficulty level")
+	errNoPlayerCells       = func(playerId int) error {
+		return fmt.Errorf("no cells found for player %v", playerId)
+	}
+)
+
 type BotAction struct {
 	Attack  [][]int `json:"attack"`
 	Upgrade []int   `json:"upgrade"`
 }
 
-func DoTurn(g *game.Game, player game.Player) error {
+var attackHandlers = [...]func(g *game.Game, player game.Player) error{
+	DoAttackEasy, DoAttackMedium, DoAttackMedium, DoAttackMedium,
+}
+
+var upgradeHandlers = [...]func(g *game.Game, player game.Player) error{
+	DoUpgradeEasy, DoUpgradeMedium, DoUpgradeMedium, DoUpgradeMedium,
+}
+
+func DoAttack(g *game.Game, player game.Player, difficulty int) error {
+	if difficulty > len(attackHandlers) {
+		return errIncorrectDifficulty
+	}
+	err := attackHandlers[difficulty](g, player)
+	g.EndAttack(player)
+
+	return err
+}
+
+func DoUpgrade(g *game.Game, player game.Player, difficulty int) error {
+	if difficulty > len(upgradeHandlers) {
+		return errIncorrectDifficulty
+	}
+	err := upgradeHandlers[difficulty](g, player)
+	g.EndTurn(player)
+	return err
+}
+
+func DoAttackMedium(g *game.Game, player game.Player) error {
 	for !g.IsFinished() {
 		body, err := getJSONResponse(g, "/ai_attack")
 		if err != nil {
-			g.EndAttack(player)
 			fmt.Println("Ошибка при получении JSON-ответа:", err)
 			return err
 		}
@@ -31,15 +65,13 @@ func DoTurn(g *game.Game, player game.Player) error {
 		var action BotAction
 		err = json.Unmarshal(body, &action)
 		if err != nil {
-			g.EndAttack(player)
 			fmt.Println("Ошибка при размаршалировании JSON:", err)
 			return err
 		}
 
 		// If the bot returns None (skips the turn)
 		if action.Attack == nil {
-			g.EndAttack(player)
-			return fmt.Errorf("no cells found for player %v", player.Id())
+			return nil
 		}
 
 		cell := action.Attack[0]
@@ -53,11 +85,10 @@ func DoTurn(g *game.Game, player game.Player) error {
 	return nil
 }
 
-func DoUpgrade(g *game.Game, player game.Player) error {
+func DoUpgradeMedium(g *game.Game, player game.Player) error {
 	for {
 		body, err := getJSONResponse(g, "/ai_upgrade")
 		if err != nil {
-			g.EndTurn(player)
 			fmt.Println("Ошибка при получении JSON-ответа:", err)
 			return err
 		}
@@ -68,14 +99,12 @@ func DoUpgrade(g *game.Game, player game.Player) error {
 		var action BotAction
 		err = json.Unmarshal(body, &action)
 		if err != nil {
-			g.EndTurn(player)
 			fmt.Println("Ошибка при размаршалировании JSON:", err)
 			return err
 		}
 
 		// If the bot returns None (skips the turn)
 		if action.Upgrade == nil {
-			g.EndTurn(player)
 			return nil
 		}
 
@@ -119,8 +148,9 @@ func getJSONResponse(g *game.Game, path string) ([]byte, error) {
 	return responseBody, nil
 }
 
-func DoTurnVanilla(g *game.Game, player game.Player) error {
-	// Temporary implementation
+func DoAttackEasy(g *game.Game, player game.Player) error {
+	foundCells := false
+
 	for _, row := range g.Board.Cells {
 		for _, cell := range row {
 			if cell == nil {
@@ -132,15 +162,20 @@ func DoTurnVanilla(g *game.Game, player game.Player) error {
 				if err != nil {
 					return err
 				}
+
+				foundCells = true
 			}
 		}
 	}
 
-	g.EndAttack(player)
-	return fmt.Errorf("no cells found for player %v", player.Id())
+	if !foundCells {
+		return errNoPlayerCells(player.Id())
+	}
+
+	return nil
 }
 
-func DoUpgradeVanilla(g *game.Game, player game.Player) error {
+func DoUpgradeEasy(g *game.Game, player game.Player) error {
 	// ChatGPT powered
 	// Find all cells owned by the player and store them in an array
 	var ownedCells []game.Cell
@@ -177,8 +212,6 @@ func DoUpgradeVanilla(g *game.Game, player game.Player) error {
 		ownedCells = append(ownedCells[:randomIndex], ownedCells[randomIndex+1:]...)
 	}
 
-	// End the turn for the player
-	g.EndTurn(player)
 	return nil
 }
 

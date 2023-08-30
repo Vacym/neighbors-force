@@ -7,14 +7,16 @@ import (
 )
 
 var (
-	errGameIsNotExist  = errors.New("game has not been created yet")
-	errIndexOutOfRange = errors.New("index out of range")
+	errGameIsNotExist           = errors.New("game has not been created yet")
+	errIndexOutOfRange          = errors.New("index out of range")
+	errIncorrectDifficultiesLen = errors.New("incorrect slice of difficulties")
 )
 
 // gameBox holds a reference to the current game and the user's ID.
 type gameBox struct {
-	Game   *game.Game
-	UserId int
+	Game         *game.Game
+	UserId       int
+	difficulties []int
 }
 
 // User represents a user and their actions in the game.
@@ -33,9 +35,16 @@ func (u *User) me() game.Player {
 }
 
 // createGame sets the current game and user's ID in the user's GameBox.
-func (u *User) createGame(g *game.Game, id int) {
+func (u *User) createGame(g *game.Game, id int, difficulties []int) {
 	u.GameBox.Game = g
 	u.GameBox.UserId = id
+
+	// Ensure that the difficulties slice has the same length as the number of players in the game.
+	difficultyCount := len(g.Players)
+	if len(difficulties) < difficultyCount {
+		difficulties = append(difficulties, make([]int, difficultyCount-len(difficulties))...)
+	}
+	u.GameBox.difficulties = difficulties[:difficultyCount]
 }
 
 // attack performs an attack from a source cell to a target cell.

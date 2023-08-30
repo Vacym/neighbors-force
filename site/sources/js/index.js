@@ -7,12 +7,26 @@ function stringObjectToNumbers(formData) {
 }
 
 function sendFormData(formData) {
-    console.log(Array.from(formData.entries()))
-    console.log(Object.fromEntries(formData))
+    const numPlayers = parseInt(formData.get('num_players'));
+
+    const botLevelInputs = new Array(numPlayers)
+        .fill(0)
+        .map((_, index) => {
+            const inputName = `bot_levels[${index}]`;
+            const inputValue = formData.get(inputName);
+            return inputValue !== null ? parseInt(inputValue) : 0;
+        });
+
     const requestData = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stringObjectToNumbers(Object.fromEntries(formData)))
+        body: JSON.stringify({
+            rows: parseInt(formData.get('rows')),
+            cols: parseInt(formData.get('cols')),
+            num_players: numPlayers,
+            player_id: parseInt(formData.get('player_id')),
+            bot_levels: botLevelInputs
+        })
     };
 
     return fetch('api/game/create', requestData)
