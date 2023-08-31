@@ -7,12 +7,26 @@ function stringObjectToNumbers(formData) {
 }
 
 function sendFormData(formData) {
-    console.log(Array.from(formData.entries()))
-    console.log(Object.fromEntries(formData))
+    const numPlayers = parseInt(formData.get('num_players'));
+
+    const botLevelInputs = new Array(numPlayers)
+        .fill(0)
+        .map((_, index) => {
+            const inputName = `bot_levels[${index}]`;
+            const inputValue = formData.get(inputName);
+            return inputValue !== null ? parseInt(inputValue) : 0;
+        });
+
     const requestData = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(stringObjectToNumbers(Object.fromEntries(formData)))
+        body: JSON.stringify({
+            rows: parseInt(formData.get('rows')),
+            cols: parseInt(formData.get('cols')),
+            num_players: numPlayers,
+            player_id: parseInt(formData.get('player_id')),
+            bot_levels: botLevelInputs
+        })
     };
 
     return fetch('api/game/create', requestData)
@@ -76,7 +90,8 @@ function startNewGame(data) {
         recover(data.error)
         return
     }
-
+    document.getElementById("end-attack").classList.remove("hide")
+    document.getElementById("end-turn").classList.add("hide")
     boardElement = renderNewBoard(board)
     renderScores(players[turn].points)
     markCanAttack(boardElement, turn)
@@ -95,6 +110,8 @@ function startUpgrade(data) {
         return
     }
 
+    document.getElementById("end-attack").classList.add("hide")
+    document.getElementById("end-turn").classList.remove("hide")
     boardElement = renderNewBoard(board)
     renderScores(players[turn].points)
     markCanUpgrade(boardElement, turn)
@@ -343,11 +360,14 @@ function main() {
         if (event.key === 'N' || event.key === 'n') {
             form.dispatchEvent(new Event('submit'));
         } else if (event.key === 'Z' || event.key === 'z') {
-            endAttackButton.click();
-        } else if (event.key === 'X' || event.key === 'x') {
-            endTurnButton.click();
+            if (!endAttackButton.classList.contains('hide')) {
+                endAttackButton.click();
+            } else if (!endTurnButton.classList.contains('hide')) {
+                endTurnButton.click();
+            }
         }
     });
+
 }
 
 document.addEventListener('DOMContentLoaded', main);

@@ -14,6 +14,10 @@ html {
     user-select: none;
 }
 
+.hide {
+    display: none;
+}
+
 td {
     width: 54px;
     height: 62px;
@@ -109,7 +113,6 @@ td:not([owner-id]) use {
     margin-top: 0px;
 }
 
-
 td {
     width: 54px;
     height: 62px;
@@ -117,14 +120,13 @@ td {
     padding: 0;
     position: relative;
 }
-  
-  
+
 svg {
     position: absolute;
     top: 0;
     left: 0;
 }
-  
+
 .num {
     position: absolute;
     top: 50%;
@@ -139,14 +141,33 @@ svg {
     top: 32%;
     left: 65%;
 }
-  
+
 .level {
     top: 68%;
     left: 35%;
 }
 
-
 .score-counter {
     color: white;
     font-size: 20px;
-  }
+}
+
+button {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 5px;
+    color: #ffffff; 
+    background-color: #333333;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #404040;
+}
+  
+
+button:active {
+    background-color: #303030;
+}
