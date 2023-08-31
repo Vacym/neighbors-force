@@ -90,7 +90,8 @@ function startNewGame(data) {
         recover(data.error)
         return
     }
-
+    document.getElementById("end-attack").classList.remove("hide")
+    document.getElementById("end-turn").classList.add("hide")
     boardElement = renderNewBoard(board)
     renderScores(players[turn].points)
     markCanAttack(boardElement, turn)
@@ -109,6 +110,8 @@ function startUpgrade(data) {
         return
     }
 
+    document.getElementById("end-attack").classList.add("hide")
+    document.getElementById("end-turn").classList.remove("hide")
     boardElement = renderNewBoard(board)
     renderScores(players[turn].points)
     markCanUpgrade(boardElement, turn)
@@ -357,11 +360,14 @@ function main() {
         if (event.key === 'N' || event.key === 'n') {
             form.dispatchEvent(new Event('submit'));
         } else if (event.key === 'Z' || event.key === 'z') {
-            endAttackButton.click();
-        } else if (event.key === 'X' || event.key === 'x') {
-            endTurnButton.click();
+            if (!endAttackButton.classList.contains('hide')) {
+                endAttackButton.click();
+            } else if (!endTurnButton.classList.contains('hide')) {
+                endTurnButton.click();
+            }
         }
     });
+
 }
 
 document.addEventListener('DOMContentLoaded', main);

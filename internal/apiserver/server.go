@@ -317,7 +317,7 @@ func (s *apiServer) CreateFullGame() http.HandlerFunc {
 func doAllBotsTurns(g *game.Game, playerId int, difficulties []int) error {
 	var err error
 
-	for g.Turn() != playerId && g.Players[playerId].CellsCount() != 0 {
+	for g.Turn() != playerId && g.Players[playerId].CellsCount() != 0 && !g.IsFinished() {
 		if g.Turn() >= len(difficulties) {
 			return errIncorrectDifficultiesLen
 		}
